@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "README.md",
+                "file": "context/design/brainstorming/questioning.md/steps/response.17a52294.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "README"
+              "title": "response.17a52294"
             }
           }
         ]
@@ -94,7 +94,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "README.md",
+                "file": "context/design/brainstorming/questioning.md/steps/response.17a52294.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -104,7 +104,7 @@
                 "unlinkedCollapsed": true
               },
               "icon": "links-coming-in",
-              "title": "Backlinks for README"
+              "title": "Backlinks for response.17a52294"
             }
           },
           {
@@ -155,8 +155,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 300,
-    "collapsed": true
+    "width": 300
   },
   "left-ribbon": {
     "hiddenItems": {
@@ -166,11 +165,27 @@
       "daily-notes:Open today's daily note": false,
       "templates:Insert template": false,
       "command-palette:Open command palette": false,
-      "bases:Create new base": false
+      "bases:Create new base": false,
+      "terminal:Open terminal": false
     }
   },
   "active": "60ccb8b74e272dda",
   "lastOpenFiles": [
+    "context/design/learning/exercise-0.md/steps/response.8ec59975.md",
+    "context/design/learning/exercise-0.md/steps",
+    "context/design/learning/exercise-0.md/20251014_215214.57dabb16.md",
+    "context/design/learning/exercise-0.md",
+    "context/design/brainstorming/questioning.md/20251014_214330.b803eaf1.md",
+    "context/design/brainstorming/questioning.md/steps/response.f86cb568.md",
+    "design/learning/exercise-0.md",
+    "design/background/concept-specifications.md",
+    "design/background/concept-design-overview.md",
+    "design/learning/understanding-concepts.md",
+    "context/design/learning/understanding-concepts.md/20251014_213405.02e2b679.md",
+    "context/design/learning/understanding-concepts.md/steps/response.cf4b179a.md",
+    "context/design/learning/understanding-concepts.md/20251014_213346.a05a3e97.md",
+    "context/design/learning/understanding-concepts.md/steps/question.3c866d09.md",
+    "design/brainstorming/questioning.md",
     "README.md"
   ]
 }

@@ -1,0 +1,179 @@
+import { Collection, Db } from "npm:mongodb";
+import { Empty, ID } from "@utils/types.ts";
+
+// Declare collection prefix, use concept name
+const PREFIX = "ProgressionBuilder" + ".";
+
+// A fixed ID for the single document storing the progression builder's state.
+const PROGRESSION_DOC_ID: ID = "mainProgression" as ID;
+
+/**
+ * @state
+ * A sequence of `Slots` with
+ *   a `chord` of type `String`, or `null` if no chord is set
+ * A `Slot` represents a single position in the musical progression.
+ */
+interface Slot {
+  chord: string | null;
+}
+
+/**
+ * @state
+ * The main state document for the ProgressionBuilder concept.
+ * It holds the entire sequence of slots and the currently selected slot index.
+ * A `selectedSlotIdx` of type `Number`, referencing the index of the currently selected slot
+ * in the sequence or `null` if no slot is selected.
+ */
+interface ProgressionStateDoc {
+  _id: ID;
+  slots: Slot[];
+  selectedSlotIdx: number | null;
+}
+
+/**
+ * @concept ProgressionBuilder
+ * @purpose enable users to construct and modify a sequence of musical units by adding, setting, or removing elements.
+ * @principle A user begins with an empty sequence. They add new slots to extend the sequence,
+ *            select a slot to edit, set a chord in that slot, and can later remove either the
+ *            chord or the entire slot. At any time one slot is designated as selected for editing.
+ */
+export default class ProgressionBuilderConcept {
+  private progressionState: Collection<ProgressionStateDoc>;
+
+  constructor(private readonly db: Db) {
+    this.progressionState = this.db.collection(PREFIX + "state");
+  }
+
+  /**
+   * Helper to get or initialize the progression state document.
+   * Ensures that a single state document always exists for the concept.
+   */
+  private async _getProgressionState(): Promise<ProgressionStateDoc> {
+    let doc = await this.progressionState.findOne({ _id: PROGRESSION_DOC_ID });
+    if (!doc) {
+      doc = {
+        _id: PROGRESSION_DOC_ID,
+        slots: [],
+        selectedSlotIdx: null,
+      };
+      await this.progressionState.insertOne(doc);
+    }
+    return doc;
+  }
+
+  /**
+   * selectSlot(slotIdx: Number)
+   * @requires `0 <= slotIdx < Slots.length`
+   * @effect sets `selectedSlotIdx` to `slotIdx` if `slotIdx` is different from the current `selectedSlotIdx`.
+   *         If `slotIdx` is the same as the current `selectedSlotIdx`, it sets `selectedSlotIdx` to `null` (toggles selection off).
+   */
+  async selectSlot(slotIdx: number): Promise<Empty | { error: string }> {
+    const doc = await this._getProgressionState();
+
+    // @requires 0 <= slotIdx < Slots.length
+    if (slotIdx < 0 || slotIdx >= doc.slots.length) {
+      return { error: "Slot index out of bounds." };
+    }
+
+    // @effect sets selectedSlotIdx to slotIdx if slotIdx != selectedSlotIdx, sets selectedSlotIdx to null if slotIdx == selectedSlotIdx
+    const newSelectedIdx = doc.selectedSlotIdx === slotIdx ? null : slotIdx;
+
+    await this.progressionState.updateOne(
+      { _id: PROGRESSION_DOC_ID },
+      { $set: { selectedSlotIdx: newSelectedIdx } },
+    );
+
+    return {};
+  }
+
+  /**
+   * addSlot()
+   * @effect appends a new empty `Slot` to the sequence and sets `selectedSlotIdx` as its index.
+   */
+  async addSlot(): Promise<Empty> {
+    const doc = await this._getProgressionState();
+
+    // @effect appends a new empty Slot to the sequence
+    const newSlot: Slot = { chord: null };
+    const newSlots = [...doc.slots, newSlot];
+    
+    // @effect and set selectedSlotIdx as its index
+    const newSelectedIdx = newSlots.length - 1;
+
+    await this.progressionState.updateOne(
+      { _id: PROGRESSION_DOC_ID },
+      { $set: { slots: newSlots, selectedSlotIdx: newSelectedIdx } },
+    );
+
+    return {};
+  }
+
+  /**
+   * setChord(chord: String)
+   * @requires `0 <= selectedSlotIdx < Slots.length` and not `null`, `chord` is a chord in standard music notation.
+   * @effect sets the `Slot` at `selectedSlotIdx`’s `chord` to `chord`.
+   */
+  async setChord(chord: string | null): Promise<Empty | { error: string }> {
+    const doc = await this._getProgressionState();
+
+    // @requires 0 <= selectedSlotIdx < Slots.length and not null
+    if (doc.selectedSlotIdx === null || doc.selectedSlotIdx < 0 || doc.selectedSlotIdx >= doc.slots.length) {
+      return { error: "No slot is currently selected to set a chord." };
+    }
+
+    // @effect sets the Slot at selectedSlotIdx’s chord to chord
+    const newSlots = [...doc.slots]; // Create a shallow copy to modify
+    newSlots[doc.selectedSlotIdx].chord = chord;
+
+    await this.progressionState.updateOne(
+      { _id: PROGRESSION_DOC_ID },
+      { $set: { slots: newSlots } },
+    );
+
+    return {};
+  }
+
+  /**
+   * deleteChord()
+   * @requires `0 <= selectedSlotIdx < Slots.length` and not `null`.
+   * @effect sets `chord` at the `Slot` at `selectedSlotIdx` to `null`.
+   */
+  async deleteChord(): Promise<Empty | { error: string }> {
+    return await this.setChord(null);
+  }
+
+  /**
+   * deleteSlot()
+   * @requires `0 <= selectedSlotIdx < Slots.length` and not `null`.
+   * @effect removes the `Slot` at `selectedSlotIdx` from the sequence and sets `selectedSlotIdx` to `null`.
+   */
+  async deleteSlot(): Promise<Empty | { error: string }> {
+    const doc = await this._getProgressionState();
+
+    // @requires 0 <= selectedSlotIdx < Slots.length and not null
+    if (doc.selectedSlotIdx === null || doc.selectedSlotIdx < 0 || doc.selectedSlotIdx >= doc.slots.length) {
+      return { error: "No slot is currently selected to delete." };
+    }
+
+    // @effect removes the Slot at selectedSlotIdx from the sequence
+    const newSlots = doc.slots.filter((_, idx) => idx !== doc.selectedSlotIdx);
+    
+    // @effect sets selectedSlotIdx to null
+    await this.progressionState.updateOne(
+      { _id: PROGRESSION_DOC_ID },
+      { $set: { slots: newSlots, selectedSlotIdx: null } },
+    );
+
+    return {};
+  }
+
+  /**
+   * _getProgression(): (slots: Slot[], selectedSlotIdx: number | null)
+   * Query to get the current state of the progression builder, including all slots and the selected index.
+   * @effects return the current list of slots and the selected slot index.
+   */
+  async _getProgression(): Promise<{ slots: Slot[]; selectedSlotIdx: number | null }> {
+    const doc = await this._getProgressionState();
+    return { slots: doc.slots, selectedSlotIdx: doc.selectedSlotIdx };
+  }
+}
