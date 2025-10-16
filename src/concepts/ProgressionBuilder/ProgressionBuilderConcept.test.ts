@@ -111,6 +111,10 @@ Deno.test("ProgressionBuilderConcept: setChord() requirements and effects", asyn
     await concept.setChord(null);
     state = await concept._getProgression();
     assertEquals(state.slots[0].chord, null, "Chord should be set to null.");
+
+    // Test invalid chord
+    const error2 = await concept.setChord("invalid");
+    assertEquals("error" in error2, true, "Cannot set invalid chord.");
   } finally {
     await client.close();
   }

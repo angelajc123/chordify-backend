@@ -1,6 +1,6 @@
 # concept: ProgressionBuilder
 *   **concept**: ProgressionBuilder
-*   **purpose**: enable users to construct and modify a sequence of musical units by adding, setting, or removing elements.
+*   **purpose**: enable users to quickly and easily construct and modify a chord progression by adding, setting, or removing chords.
 *   **principle**: A user begins with an empty sequence. They add new slots to extend the sequence, select a slot to edit, set a chord in that slot, and can later remove either the chord or the entire slot. At any time one slot is designated as selected for editing.
 *   **state**:
     *   A sequence of `Slots` with

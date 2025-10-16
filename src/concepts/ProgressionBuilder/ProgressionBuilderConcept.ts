@@ -7,6 +7,10 @@ const PREFIX = "ProgressionBuilder" + ".";
 // A fixed ID for the single document storing the progression builder's state.
 const PROGRESSION_DOC_ID: ID = "mainProgression" as ID;
 
+// A regex pattern to validate chords in standard music notation
+const CHORD_PATTERN =
+  /^([A-G][#b]?)(?:maj7?|M7?|min7?|m7?|dim7?|aug7?)?(\d+)?((?:sus\d+|add\d+|b\d+|#\d+)*)?(\/[A-G][#b]?)?$/;
+
 /**
  * @state
  * A sequence of `Slots` with
@@ -119,6 +123,11 @@ export default class ProgressionBuilderConcept {
     // @requires 0 <= selectedSlotIdx < Slots.length and not null
     if (doc.selectedSlotIdx === null || doc.selectedSlotIdx < 0 || doc.selectedSlotIdx >= doc.slots.length) {
       return { error: "No slot is currently selected to set a chord." };
+    }
+
+    // @requires chord is a chord in standard music notation
+    if (chord !== null && !chord.match(CHORD_PATTERN)) {
+      return { error: "Chord is not in standard music notation." };
     }
 
     // @effect sets the Slot at selectedSlotIdx’s chord to chord
