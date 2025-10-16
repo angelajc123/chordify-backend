@@ -1,3 +1,9 @@
+[@concept-design-brief](../../background/concept-design-brief.md)
+
+[@concept-design-overview](../../background/concept-design-overview.md)
+
+[@concept-specifications](../../background/concept-specifications.md)
+
 # concept: ProgressionBuilder
 *   **concept**: ProgressionBuilder
 *   **purpose**: enable users to quickly and easily construct and modify a chord progression by adding, setting, or removing chords.
