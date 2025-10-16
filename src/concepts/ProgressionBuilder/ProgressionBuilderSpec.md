@@ -9,13 +9,13 @@
         *   A `chordSequence` of type sequence of `Slots`, each with
             *   a `chord` of type `String`, or `null` if no chord is set
 *   **actions**:
-    *   `createProgression(name: String): (progressionId: Number)`
+    *   `createProgression(name: String): (progression: Progression)`
         *   **effect**: Creates a new, empty progression with the given name, and unique id, and returns that id.
     *   `addSlot(progressionId: Number)`
         *   **requires**: `progressionId` is a valid id of a progression
         *   **effect**: appends a null `Slot` to `chordSequence` of the progression with id `progressionId`
     *   `setChord(progressionId: Number, position: Number, chord: String)`
-        *   **requires**: `progressionId` is a valid id of a progression, `position` is a valid index of `chordSequence` of the progression with id `progressionId`, `chord` is a chord in standard music notation
+        *   **requires**: `progressionId` is a valid id of a progression, `position` is a valid index of `chordSequence` of the progression with id `progressionId`
         *   **effect**: sets the `Slot` at `position` of `chordSequence` of the progression with id `progressionId`’s `chord` to `chord`
     *   `deleteChord(progressionId: Number, position: Number)`
         *   **requires**: `progressionId` is a valid id of a progression, `position` is a valid index of `chordSequence` of the progression with id `progressionId`
