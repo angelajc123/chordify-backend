@@ -1,0 +1,38 @@
+---
+timestamp: 'Thu Oct 16 2025 19:32:31 GMT-0400 (Eastern Daylight Time)'
+parent: '[[../20251016_193231.76449f51.md]]'
+content_id: 212d1a212b210ae8de939fda4e242be06415bcad2dd937ed4549cb792593969e
+---
+
+# concept: PlayBack
+
+* **concept**: PlayBack \[Progression]
+
+* **purpose**: allow users to listen to sequences of musical units easily, enabling rapid feedbackand iteration during composition.
+
+* **principle**: A user can set play back settings such as instrument and seconds per chord. The user can play sequences of chords or a single chord.
+
+* **state**:
+  * A set of `ProgressionPlaybackSettings` with
+    * A `progression` of type `Progression`
+    * An `instrument` of type `String`, default `Grand Piano`
+    * A `secondsPerChord` of type `Number`, default `1`
+
+* **actions**:
+  * `initializeSettings(progression: Progression) : (progressionPlaybackSettings: ProgressionPlaybackSettings)`
+    * **requires**: `progression` does not exist in ProgressionPlaybackSettings
+    * **effect**: creates a new `ProgressionPlaybackSettings` for `progression` with default values for `instrument`, `secondsPerChord`.
+  * `setInstrument(progression: Progression, instrument: String)`
+    * **requires**: `progression` exists in `ProgressionPlaybackSettings`
+    * **effect**: updates the `ProgressionPlaybackSettings` for `progression` with the given `instrument`.
+  * `setSecondsPerChord(progression: Progression, secondsPerChord: Number)`
+    * **requires**: `progression` exists in `ProgressionPlaybackSettings`
+    * **effect**: updates the `ProgressionPlaybackSettings` for `progression` with the given `secondsPerChord`.
+  * `getProgressionSettings(progression: Progression): (progressionSettings: ProgressionPlaybackSettings)`
+    * **effect**: returns the `ProgressionPlaybackSettings` for `progression`.
+  * `playChord(progression: Progression, chord: String)`
+    * **requires**: `progression` exists in `ProgressionPlaybackSettings`
+    * **effect**: plays the given `chord` using the settings in `ProgressionPlaybackSettings` for `progression`.
+  * `playProgression(progression: Progression, chordSequence: (String | null)[])`
+    * **requires**: `progression` exists in `ProgressionPlaybackSettings`
+    * **effect**: plays the given `chordSequence` using the settings in `ProgressionPlaybackSettings` for `progression`.

@@ -1,43 +1,9 @@
-[@concept-design-overview](../../background/concept-design-overview.md)
+---
+timestamp: 'Fri Oct 17 2025 00:12:47 GMT-0400 (Eastern Daylight Time)'
+parent: '[[../20251017_001247.c7b89f52.md]]'
+content_id: 81a2dcfe9f2a42f684762449cc893e17300ab1721453a23f1ce34c199dc1922f
+---
 
-[@concept-specifications](../../background/concept-specifications.md)
-
-[@implementing-concepts](../../background/implementing-concepts.md)
-
-[@sample-concept-implementation](../../../src/concepts/LikertSurvey/LikertSurveyConcept.ts)
-
-# implement: PlayBack
-# concept: PlayBack
-*   **concept**: PlayBack [Progression]
-*   **purpose**: allow users to listen to progressions easily, enabling rapid feedbackand iteration during composition.
-*   **principle**: A user can set play back settings such as instrument and seconds per chord. The user can play sequences of chords or a single chord.
-*   **state**:
-    *   A set of `ProgressionPlaybackSettings` with
-        *   A `progression` of type `Progression`
-        *   An `instrument` of type `String`, default `Grand Piano`
-        *   A `secondsPerChord` of type `Number`, default `1`
-
-*   **actions**:
-    *   `initializeSettings(progression: Progression) : (progressionPlaybackSettings: ProgressionPlaybackSettings)`
-        *   **requires**: `progression` does not exist in ProgressionPlaybackSettings
-        *   **effect**: creates a new `ProgressionPlaybackSettings` for `progression` with default values for `instrument`, `secondsPerChord`.
-    *   `setInstrument(progression: Progression, instrument: String)`
-        *   **requires**: `progression` exists in `ProgressionPlaybackSettings`
-        *   **effect**: updates the `ProgressionPlaybackSettings` for `progression` with the given `instrument`.
-    *   `setSecondsPerChord(progression: Progression, secondsPerChord: Number)`
-        *   **requires**: `progression` exists in `ProgressionPlaybackSettings`
-        *   **effect**: updates the `ProgressionPlaybackSettings` for `progression` with the given `secondsPerChord`.
-    *   `getProgressionSettings(progression: Progression): (progressionSettings: ProgressionPlaybackSettings)`
-        *   **effect**: returns the `ProgressionPlaybackSettings` for `progression`.
-    *   `playChord(progression: Progression, chord: String)`
-        *   **requires**: `progression` exists in `ProgressionPlaybackSettings`
-        *   **effect**: plays the given `chord` using the settings in `ProgressionPlaybackSettings` for `progression`.
-    *   `playProgression(progression: Progression, chordSequence: (String | null)[])`
-        *   **requires**: `progression` exists in `ProgressionPlaybackSettings`
-        *   **effect**: plays the given `chordSequence` using the settings in `ProgressionPlaybackSettings` for `progression`.
-
-# implement: PlayBack
-# prompt: implement PlayBack following the implementation specifications. Use Tone.js to play the chords and Tonal.js to get chords.
 # response:
 
 ```typescript
@@ -48,12 +14,15 @@ import * as Tonal from "npm:tonal"; // Import Tonal for chord processing
 // import * as Tone from "npm:tone"; // Tone.js is a client-side library for Web Audio API.
 // In a backend concept, we will provide the data for a client to play the audio.
 
+// Collection prefix to ensure namespace separation
 const PREFIX = "PlayBack" + ".";
 
+// Generic types for the concept's external dependencies
 type Progression = ID;
 
-interface PlaybackSettings {
-  _id: Progression;
+// Internal entity types for state
+type ProgressionPlaybackSettings = {
+  _id: Progression; // The ID of the progression itself is the ID for its settings
   instrument: string;
   secondsPerChord: number;
 };
@@ -61,9 +30,10 @@ interface PlaybackSettings {
 /**
  * @concept PlayBack
  * @purpose To allow users to listen to progressions easily, enabling rapid feedback and iteration during composition.
+ * @principle A user can set play back settings such as instrument and seconds per chord. The user can play sequences of chords or a single chord.
  */
 export default class PlayBackConcept {
-  private settings: Collection<PlaybackSettings>;
+  settings: Collection<ProgressionPlaybackSettings>;
 
   constructor(private readonly db: Db) {
     this.settings = this.db.collection(PREFIX + "settings");
@@ -71,12 +41,12 @@ export default class PlayBackConcept {
 
   /**
    * Action: Initializes playback settings for a given progression.
-   * @requires progression does not exist in PlaybackSettings.
-   * @effects Creates a new PlaybackSettings for progression with default values for instrument ('Grand Piano') and secondsPerChord (1).
+   * @requires progression does not exist in ProgressionPlaybackSettings.
+   * @effects Creates a new ProgressionPlaybackSettings for progression with default values for instrument ('Grand Piano') and secondsPerChord (1).
    */
   async initializeSettings(
-    progression: Progression
-  ): Promise<PlaybackSettings | {error: string}> {
+    { progression }: { progression: Progression },
+  ): Promise<{ progressionPlaybackSettings: ProgressionPlaybackSettings } | { error: string }> {
     const existingSettings = await this.settings.findOne({ _id: progression });
     if (existingSettings) {
       return {
@@ -84,20 +54,20 @@ export default class PlayBackConcept {
       };
     }
 
-    const defaultSettings: PlaybackSettings = {
+    const defaultSettings: ProgressionPlaybackSettings = {
       _id: progression,
       instrument: "Grand Piano",
       secondsPerChord: 1,
     };
 
     await this.settings.insertOne(defaultSettings);
-    return defaultSettings;
+    return { progressionPlaybackSettings: defaultSettings };
   }
 
   /**
    * Action: Sets the instrument for a progression's playback.
-   * @requires progression exists in PlaybackSettings.
-   * @effects Updates the PlaybackSettings for progression with the given instrument.
+   * @requires progression exists in ProgressionPlaybackSettings.
+   * @effects Updates the ProgressionPlaybackSettings for progression with the given instrument.
    */
   async setInstrument(
     { progression, instrument }: { progression: Progression; instrument: string },
@@ -117,8 +87,8 @@ export default class PlayBackConcept {
 
   /**
    * Action: Sets the duration (in seconds) for each chord in a progression's playback.
-   * @requires progression exists in PlaybackSettings.
-   * @effects Updates the PlaybackSettings for progression with the given secondsPerChord.
+   * @requires progression exists in ProgressionPlaybackSettings.
+   * @effects Updates the ProgressionPlaybackSettings for progression with the given secondsPerChord.
    */
   async setSecondsPerChord(
     { progression, secondsPerChord }: {
@@ -145,16 +115,18 @@ export default class PlayBackConcept {
 
   /**
    * Query: Retrieves the playback settings for a specific progression.
-   * @effects Returns the PlaybackSettings for progression.
+   * @effects Returns the ProgressionPlaybackSettings for progression.
    */
-  async getProgressionSettings(progression: Progression): Promise<PlaybackSettings | { error: string }> {
+  async getProgressionSettings(
+    { progression }: { progression: Progression },
+  ): Promise<{ progressionSettings: ProgressionPlaybackSettings } | { error: string }> {
     const settings = await this.settings.findOne({ _id: progression });
     if (!settings) {
       return {
         error: `Playback settings for progression ID ${progression} not found.`,
       };
     }
-    return settings;
+    return { progressionSettings: settings };
   }
 
   /**
@@ -172,19 +144,20 @@ export default class PlayBackConcept {
    * Action: Provides data to play a single chord using the progression's settings.
    * This action does not directly play audio but returns the necessary musical data
    * and settings for a client-side audio engine (e.g., Tone.js) to perform playback.
-   * @requires progression exists in PlaybackSettings.
+   * @requires progression exists in ProgressionPlaybackSettings.
    * @effects Returns an object containing the notes, instrument, and duration for the chord.
    */
   async playChord(
     { progression, chord }: { progression: Progression; chord: string },
   ): Promise<
-    { notes: string[]; instrument: string; duration: number } | { error: string }
+    | { notes: string[]; instrument: string; duration: number }
+    | { error: string }
   > {
-    const settings = await this.getProgressionSettings(progression);
-    if ("error" in settings) {
-      return settings;
+    const settingsResult = await this.getProgressionSettings({ progression });
+    if ("error" in settingsResult) {
+      return settingsResult;
     }
-    const { instrument, secondsPerChord } = settings;
+    const { instrument, secondsPerChord } = settingsResult.progressionSettings;
 
     const notes = this._getNotesFromChord(chord);
     if (notes.length === 0) {
@@ -202,7 +175,7 @@ export default class PlayBackConcept {
    * Action: Provides data to play a sequence of chords (a progression) using the progression's settings.
    * This action does not directly play audio but returns the necessary musical data
    * and settings for a client-side audio engine (e.g., Tone.js) to perform playback.
-   * @requires progression exists in PlaybackSettings.
+   * @requires progression exists in ProgressionPlaybackSettings.
    * @effects Returns an array of objects, each representing a chord or rest with its notes and duration, along with the instrument.
    */
   async playProgression(
@@ -220,11 +193,11 @@ export default class PlayBackConcept {
     }
     | { error: string }
   > {
-    const settings = await this.getProgressionSettings(progression);
-    if ("error" in settings) {
-      return settings;
+    const settingsResult = await this.getProgressionSettings({ progression });
+    if ("error" in settingsResult) {
+      return settingsResult;
     }
-    const { instrument, secondsPerChord } = settings;
+    const { instrument, secondsPerChord } = settingsResult.progressionSettings;
 
     const sequenceData: (
       | { notes: string[]; duration: number }

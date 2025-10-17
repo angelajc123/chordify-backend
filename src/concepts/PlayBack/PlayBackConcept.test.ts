@@ -1,17 +1,3 @@
-[@implementation](implementation.md)
-
-[@testing-concepts](../../background/testing-concepts.md)
-
-[@test-examples](../../../src/concepts/LikertSurvey/LikertSurveyConcept.test.ts)
-
-# test: PlayBack
-# file: src/concepts/PlayBack/PlayBackConcept.test.ts
-# prompt: Write tests for PlayBackConcept.ts that covers all the actions and edge cases. Follow a similar structure to LikertSurveyConcept.test.ts.
-# response:
-
-# file: src/concepts/PlayBack/PlayBackConcept.test.ts
-
-```typescript
 import { assertEquals, assertNotEquals, assertExists } from "jsr:@std/assert";
 import { testDb } from "../../utils/database.ts";
 import { ID } from "../../utils/types.ts";
@@ -475,4 +461,3 @@ Deno.test("Action: playProgression returns error for an invalid chord string in 
     await client.close();
   }
 });
-```
