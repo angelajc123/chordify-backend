@@ -28,13 +28,13 @@ Deno.test("PlayBack Concept Principle: User sets settings and plays chords/progr
 
     // 2. Set instrument and seconds per chord
     const setInstrumentResult = await playbackConcept.setInstrument({
-      progression: progA,
+      progressionId: progA,
       instrument: "Electric Guitar",
     });
     assertNotEquals("error" in setInstrumentResult, true, "Setting instrument should succeed");
 
     const setSecondsResult = await playbackConcept.setSecondsPerChord({
-      progression: progA,
+      progressionId: progA,
       secondsPerChord: 0.75,
     });
     assertNotEquals("error" in setSecondsResult, true, "Setting seconds per chord should succeed");
@@ -50,7 +50,7 @@ Deno.test("PlayBack Concept Principle: User sets settings and plays chords/progr
 
     // 3. Play a single chord
     const playChordResult = await playbackConcept.playChord({
-      progression: progA,
+      progressionId: progA,
       chord: "Cmaj7",
     });
     assertNotEquals("error" in playChordResult, true, "Playing single chord should succeed");
@@ -66,7 +66,7 @@ Deno.test("PlayBack Concept Principle: User sets settings and plays chords/progr
     // 4. Play a progression
     const chordSequence = ["Cmaj7", "Fmaj7", null, "G7"];
     const playProgressionResult = await playbackConcept.playProgression({
-      progression: progA,
+      progressionId: progA,
       chordSequence,
     });
     assertNotEquals("error" in playProgressionResult, true, "Playing progression should succeed");
@@ -152,7 +152,7 @@ Deno.test("Action: setInstrument successfully updates instrument", async () => {
   try {
     await playbackConcept.initializeSettings(progA);
     const result = await playbackConcept.setInstrument({
-      progression: progA,
+      progressionId: progA,
       instrument: "Synthesizer",
     });
     assertNotEquals("error" in result, true, "Setting instrument should succeed");
@@ -175,7 +175,7 @@ Deno.test("Action: setInstrument returns error if progression settings not found
 
   try {
     const result = await playbackConcept.setInstrument({
-      progression: progNonExistent,
+      progressionId: progNonExistent,
       instrument: "Drums",
     });
     assertEquals("error" in result, true, "Should return an error if settings not found");
@@ -195,7 +195,7 @@ Deno.test("Action: setSecondsPerChord successfully updates duration", async () =
   try {
     await playbackConcept.initializeSettings(progA);
     const result = await playbackConcept.setSecondsPerChord({
-      progression: progA,
+      progressionId: progA,
       secondsPerChord: 1.5,
     });
     assertNotEquals("error" in result, true, "Setting duration should succeed");
@@ -218,7 +218,7 @@ Deno.test("Action: setSecondsPerChord returns error if progression settings not 
 
   try {
     const result = await playbackConcept.setSecondsPerChord({
-      progression: progNonExistent,
+      progressionId: progNonExistent,
       secondsPerChord: 2,
     });
     assertEquals("error" in result, true, "Should return an error if settings not found");
@@ -239,14 +239,14 @@ Deno.test("Action: setSecondsPerChord returns error for invalid duration", async
     await playbackConcept.initializeSettings(progA);
 
     let result = await playbackConcept.setSecondsPerChord({
-      progression: progA,
+      progressionId: progA,
       secondsPerChord: 0,
     });
     assertEquals("error" in result, true, "Should return error for zero duration");
     assertEquals((result as {error: string}).error, "secondsPerChord must be a positive number.");
 
     result = await playbackConcept.setSecondsPerChord({
-      progression: progA,
+      progressionId: progA,
       secondsPerChord: -1,
     });
     assertEquals("error" in result, true, "Should return error for negative duration");
@@ -301,11 +301,11 @@ Deno.test("Action: playChord returns correct playback data for a valid chord", a
 
   try {
     await playbackConcept.initializeSettings(progA);
-    await playbackConcept.setInstrument({ progression: progA, instrument: "Organ" });
-    await playbackConcept.setSecondsPerChord({ progression: progA, secondsPerChord: 0.5 });
+    await playbackConcept.setInstrument({ progressionId: progA, instrument: "Organ" });
+    await playbackConcept.setSecondsPerChord({ progressionId: progA, secondsPerChord: 0.5 });
 
     const playResult = await playbackConcept.playChord({
-      progression: progA,
+      progressionId: progA,
       chord: "Dmin7",
     });
     assertNotEquals("error" in playResult, true, "Playing valid chord should succeed");
@@ -327,7 +327,7 @@ Deno.test("Action: playChord returns error if progression settings not found", a
 
   try {
     const playResult = await playbackConcept.playChord({
-      progression: progNonExistent,
+      progressionId: progNonExistent,
       chord: "C",
     });
     assertEquals("error" in playResult, true, "Should return error if settings not found");
@@ -347,7 +347,7 @@ Deno.test("Action: playChord returns error for an invalid chord string", async (
   try {
     await playbackConcept.initializeSettings(progA);
     const playResult = await playbackConcept.playChord({
-      progression: progA,
+      progressionId: progA,
       chord: "InvalidChordXYZ",
     });
     assertEquals("error" in playResult, true, "Should return error for invalid chord");
@@ -366,12 +366,12 @@ Deno.test("Action: playProgression returns correct playback data for a valid seq
 
   try {
     await playbackConcept.initializeSettings(progA);
-    await playbackConcept.setInstrument({ progression: progA, instrument: "Piano" });
-    await playbackConcept.setSecondsPerChord({ progression: progA, secondsPerChord: 1.2 });
+    await playbackConcept.setInstrument({ progressionId: progA, instrument: "Piano" });
+    await playbackConcept.setSecondsPerChord({ progressionId: progA, secondsPerChord: 1.2 });
 
     const chordSequence = ["Cmaj", null, "G7", "Am"];
     const playResult = await playbackConcept.playProgression({
-      progression: progA,
+      progressionId: progA,
       chordSequence,
     });
     assertNotEquals("error" in playResult, true, "Playing valid progression should succeed");
@@ -428,7 +428,7 @@ Deno.test("Action: playProgression returns error if progression settings not fou
 
   try {
     const playResult = await playbackConcept.playProgression({
-      progression: progNonExistent,
+      progressionId: progNonExistent,
       chordSequence: ["C", "G"],
     });
     assertEquals("error" in playResult, true, "Should return error if settings not found");
@@ -449,7 +449,7 @@ Deno.test("Action: playProgression returns error for an invalid chord string in 
     await playbackConcept.initializeSettings(progA);
     const chordSequence = ["Cmaj", "InvalidChord", "G7"];
     const playResult = await playbackConcept.playProgression({
-      progression: progA,
+      progressionId: progA,
       chordSequence,
     });
     assertEquals("error" in playResult, true, "Should return error for invalid chord in sequence");

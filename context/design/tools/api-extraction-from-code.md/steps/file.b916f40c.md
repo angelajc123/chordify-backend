@@ -1,3 +1,12 @@
+---
+timestamp: 'Tue Oct 21 2025 14:29:24 GMT-0400 (Eastern Daylight Time)'
+parent: '[[../20251021_142924.c78aad5c.md]]'
+content_id: b916f40c10aea37c11135c13ca8bdccae082b148ce25b74e0f331c0bff28edda
+---
+
+# file: src/concepts/SuggestChord/SuggestChordConcept.ts
+
+```typescript
 import { Collection, Db, ObjectId } from "npm:mongodb";
 import { Empty, ID } from "@utils/types.ts";
 import { GeminiLLM } from "@utils/gemini-llm.ts";
@@ -32,17 +41,17 @@ export default class SuggestChordConcept {
    * @effects creates a new SuggestionPreferences for progression with default values for preferredGenre, complexityLevel, and key.
    */
   async initializePreferences(
-    { progressionId }: { progressionId: Progression },
+    { progression }: { progression: Progression },
   ): Promise<SuggestionPreferences | { error: string }> {
-    const existing = await this.preferences.findOne({ _id: progressionId });
+    const existing = await this.preferences.findOne({ _id: progression });
     if (existing) {
       return {
-        error: `Preferences for progression ${progressionId} already exist.`,
+        error: `Preferences for progression ${progression} already exist.`,
       };
     }
 
     const newPreferences: SuggestionPreferences = {
-      _id: progressionId,
+      _id: progression,
       preferredGenre: "Pop",
       complexityLevel: "Basic",
       key: "Cmaj",
@@ -58,18 +67,18 @@ export default class SuggestChordConcept {
    * @effects updates the SuggestionPreferences for progression with the given genre.
    */
   async setPreferredGenre(
-    { progressionId, preferredGenre }: {
-      progressionId: Progression;
+    { progression, preferredGenre }: {
+      progression: Progression;
       preferredGenre: string;
     },
   ): Promise<Empty | { error: string }> {
     const result = await this.preferences.updateOne(
-      { _id: progressionId },
+      { _id: progression },
       { $set: { preferredGenre } },
     );
 
     if (result.matchedCount === 0) {
-      return { error: `Preferences for progression ${progressionId} not found.` };
+      return { error: `Preferences for progression ${progression} not found.` };
     }
     return {};
   }
@@ -80,18 +89,18 @@ export default class SuggestChordConcept {
    * @effects updates the SuggestionPreferences for progression with the given complexityLevel.
    */
   async setComplexityLevel(
-    { progressionId, complexityLevel }: {
-      progressionId: Progression;
+    { progression, complexityLevel }: {
+      progression: Progression;
       complexityLevel: string;
     },
   ): Promise<Empty | { error: string }> {
     const result = await this.preferences.updateOne(
-      { _id: progressionId },
+      { _id: progression },
       { $set: { complexityLevel } },
     );
 
     if (result.matchedCount === 0) {
-      return { error: `Preferences for progression ${progressionId} not found.` };
+      return { error: `Preferences for progression ${progression} not found.` };
     }
     return {};
   }
@@ -102,15 +111,15 @@ export default class SuggestChordConcept {
    * @effects updates the SuggestionPreferences for progression with the given key.
    */
   async setKey(
-    { progressionId, key }: { progressionId: Progression; key: string },
+    { progression, key }: { progression: Progression; key: string },
   ): Promise<Empty | { error: string }> {
     const result = await this.preferences.updateOne(
-      { _id: progressionId },
+      { _id: progression },
       { $set: { key } },
     );
 
     if (result.matchedCount === 0) {
-      return { error: `Preferences for progression ${progressionId} not found.` };
+      return { error: `Preferences for progression ${progression} not found.` };
     }
     return {};
   }
@@ -121,15 +130,15 @@ export default class SuggestChordConcept {
    * @effects returns the SuggestionPreferences for progression.
    */
   async getProgressionPreferences(
-    { progressionId }: { progressionId: Progression },
+    { progression }: { progression: Progression },
   ): Promise<
     { progressionPreferences: SuggestionPreferences } | {
       error: string;
     }
   > {
-    const prefs = await this.preferences.findOne({ _id: progressionId });
+    const prefs = await this.preferences.findOne({ _id: progression });
     if (!prefs) {
-      return { error: `Preferences for progression ${progressionId} not found.` };
+      return { error: `Preferences for progression ${progression} not found.` };
     }
     return { progressionPreferences: prefs };
   }
@@ -141,8 +150,8 @@ export default class SuggestChordConcept {
    *          given the context of the SuggestionPreferences for progression and the chords before and after it.
    */
   async suggestChord(
-    { progressionId, chords, position }: {
-      progressionId: Progression;
+    { progression, chords, position }: {
+      progression: Progression;
       chords: (string | null)[];
       position: number;
     },
@@ -151,9 +160,9 @@ export default class SuggestChordConcept {
       return { error: `Invalid position: ${position}. Must be within 0 and ${chords.length - 1}.` };
     }
 
-    const prefs = await this.preferences.findOne({ _id: progressionId });
+    const prefs = await this.preferences.findOne({ _id: progression });
     if (!prefs) {
-      return { error: `Preferences for progression ${progressionId} not found.` };
+      return { error: `Preferences for progression ${progression} not found.` };
     }
 
     const currentProgressionString = chords.map((c) => c === null ? "EMPTY" : c).join(" - ");
@@ -214,15 +223,15 @@ export default class SuggestChordConcept {
    *          given the context of the SuggestionPreferences for progression.
    */
   async suggestProgression(
-    { progressionId, length }: { progressionId: Progression; length: number },
+    { progression, length }: { progression: Progression; length: number },
   ): Promise<{ chordSequence: string[] } | { error: string }> {
     if (length <= 0) {
       return { error: `Invalid length: ${length}. Must be greater than 0.` };
     }
 
-    const prefs = await this.preferences.findOne({ _id: progressionId });
+    const prefs = await this.preferences.findOne({ _id: progression });
     if (!prefs) {
-      return { error: `Preferences for progression ${progressionId} not found.` };
+      return { error: `Preferences for progression ${progression} not found.` };
     }
 
     const prompt = `
@@ -278,3 +287,4 @@ export default class SuggestChordConcept {
     }
   }
 }
+```

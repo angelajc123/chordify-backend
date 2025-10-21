@@ -13,8 +13,9 @@ Deno.test("Principle: User creates, modifies, and views a chord progression", as
       name: "My First Progression",
     });
     assertNotEquals("error" in createResult, true, "Progression creation failed.");
-    const { progression: progressionId } = createResult as { progression: ID };
-    assertExists(progressionId);
+    const { progression: createdProgression } = createResult as { progression: any };
+    assertExists(createdProgression);
+    const progressionId = createdProgression._id;
 
     // Verify initial state
     let progressionResult = await concept._getProgression({ progressionId });
@@ -110,8 +111,9 @@ Deno.test("Action: createProgression successfully creates a new progression", as
   try {
     const createResult = await concept.createProgression({ name: "New One" });
     assertNotEquals("error" in createResult, true);
-    const { progression: id } = createResult as { progression: ID };
-    assertExists(id);
+    const { progression } = createResult as { progression: any };
+    assertExists(progression);
+    const id = progression._id;
 
     const retrieved = await concept._getProgression({ progressionId: id });
     assertNotEquals("error" in retrieved, true);
@@ -128,9 +130,10 @@ Deno.test("Action: addSlot appends a null slot and requires valid progression ID
   const concept = new ProgressionBuilderConcept(db);
 
   try {
-    const { progression: pId } = (await concept.createProgression({
+    const { progression } = (await concept.createProgression({
       name: "Test Prog",
-    })) as { progression: ID };
+    })) as { progression: any };
+    const pId = progression._id;
 
     // Valid case
     await concept.addSlot({ progressionId: pId });
@@ -165,9 +168,10 @@ Deno.test("Action: setChord updates a slot and requires valid progression ID and
   const concept = new ProgressionBuilderConcept(db);
 
   try {
-    const { progression: pId } = (await concept.createProgression({
+    const { progression } = (await concept.createProgression({
       name: "Test Prog",
-    })) as { progression: ID };
+    })) as { progression: any };
+    const pId = progression._id;
     await concept.addSlot({ progressionId: pId });
     await concept.addSlot({ progressionId: pId });
 
@@ -216,9 +220,10 @@ Deno.test("Action: deleteChord sets chord to null and requires valid progression
   const concept = new ProgressionBuilderConcept(db);
 
   try {
-    const { progression: pId } = (await concept.createProgression({
+    const { progression } = (await concept.createProgression({
       name: "Test Prog",
-    })) as { progression: ID };
+    })) as { progression: any };
+    const pId = progression._id;
     await concept.addSlot({ progressionId: pId });
     await concept.setChord({ progressionId: pId, position: 0, chord: "Am" });
 
@@ -253,9 +258,10 @@ Deno.test("Action: deleteSlot removes a slot and requires valid progression ID a
   const concept = new ProgressionBuilderConcept(db);
 
   try {
-    const { progression: pId } = (await concept.createProgression({
+    const { progression } = (await concept.createProgression({
       name: "Test Prog",
-    })) as { progression: ID };
+    })) as { progression: any };
+    const pId = progression._id;
     await concept.addSlot({ progressionId: pId }); // pos 0: null
     await concept.addSlot({ progressionId: pId }); // pos 1: null
     await concept.setChord({ progressionId: pId, position: 0, chord: "C" });
@@ -293,9 +299,10 @@ Deno.test("Action: reorderSlots reorders slots and requires valid progression ID
   const concept = new ProgressionBuilderConcept(db);
 
   try {
-    const { progression: pId } = (await concept.createProgression({
+    const { progression } = (await concept.createProgression({
       name: "Test Prog",
-    })) as { progression: ID };
+    })) as { progression: any };
+    const pId = progression._id;
     await concept.addSlot({ progressionId: pId }); // 0: null
     await concept.addSlot({ progressionId: pId }); // 1: null
     await concept.addSlot({ progressionId: pId }); // 2: null
@@ -360,12 +367,14 @@ Deno.test("Action: deleteProgression removes a progression and requires valid ID
   const concept = new ProgressionBuilderConcept(db);
 
   try {
-    const { progression: pId1 } = (await concept.createProgression({
+    const { progression: prog1 } = (await concept.createProgression({
       name: "Prog 1",
-    })) as { progression: ID };
-    const { progression: pId2 } = (await concept.createProgression({
+    })) as { progression: any };
+    const pId1 = prog1._id;
+    const { progression: prog2 } = (await concept.createProgression({
       name: "Prog 2",
-    })) as { progression: ID };
+    })) as { progression: any };
+    const pId2 = prog2._id;
 
     // Valid case
     await concept.deleteProgression({ progressionId: pId1 });
@@ -395,9 +404,10 @@ Deno.test("Action: renameProgression renames a progression and requires valid ID
   const concept = new ProgressionBuilderConcept(db);
 
   try {
-    const { progression: pId } = (await concept.createProgression({
+    const { progression } = (await concept.createProgression({
       name: "Old Name",
-    })) as { progression: ID };
+    })) as { progression: any };
+    const pId = progression._id;
 
     // Valid case
     await concept.renameProgression({ progressionId: pId, name: "New Name" });
@@ -427,9 +437,10 @@ Deno.test("Query: _getProgression retrieves a progression or returns error for i
   const concept = new ProgressionBuilderConcept(db);
 
   try {
-    const { progression: pId } = (await concept.createProgression({
+    const { progression } = (await concept.createProgression({
       name: "Query Prog",
-    })) as { progression: ID };
+    })) as { progression: any };
+    const pId = progression._id;
 
     // Valid case
     const result = await concept._getProgression({ progressionId: pId });
@@ -462,18 +473,20 @@ Deno.test("Query: _listProgressions returns all progression identifiers and name
     assertEquals(listResult.progressionIdentifiers.length, 0);
 
     // One progression
-    const { progression: pId1 } = (await concept.createProgression({
+    const { progression: prog1 } = (await concept.createProgression({
       name: "List Prog 1",
-    })) as { progression: ID };
+    })) as { progression: any };
+    const pId1 = prog1._id;
     listResult = await concept._listProgressions();
     assertEquals(listResult.progressionIdentifiers.length, 1);
     assertEquals(listResult.progressionIdentifiers[0].id, pId1);
     assertEquals(listResult.progressionIdentifiers[0].name, "List Prog 1");
 
     // Multiple progressions
-    const { progression: pId2 } = (await concept.createProgression({
+    const { progression: prog2 } = (await concept.createProgression({
       name: "List Prog 2",
-    })) as { progression: ID };
+    })) as { progression: any };
+    const pId2 = prog2._id;
     listResult = await concept._listProgressions();
     assertEquals(listResult.progressionIdentifiers.length, 2);
     const names = listResult.progressionIdentifiers.map((p) => p.name).sort();

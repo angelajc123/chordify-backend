@@ -1,3 +1,12 @@
+---
+timestamp: 'Tue Oct 21 2025 14:29:24 GMT-0400 (Eastern Daylight Time)'
+parent: '[[../20251021_142924.c78aad5c.md]]'
+content_id: 3998c214ec71bec45b454193d50c400bcdeb87dada6a26cee36afdb0feafac75
+---
+
+# file: src/concepts/ProgressionBuilder/ProgressionBuilderConcept.ts
+
+```typescript
 import { Collection, Db } from "npm:mongodb";
 import { Empty, ID } from "@utils/types.ts";
 import { freshID } from "@utils/database.ts";
@@ -67,20 +76,19 @@ export default class ProgressionBuilderConcept {
    */
   async createProgression(
     { name }: { name: string },
-  ): Promise<{ progression: ProgressionDoc } | { error: string }> {
+  ): Promise<{ progression: Progression } | { error: string }> {
     const progressionId = freshID() as Progression;
-    const progression = {
+    const result = await this.progressions.insertOne({
       _id: progressionId,
       name,
       chordSequence: [],
-    }
-    const result = await this.progressions.insertOne(progression);
+    });
 
     if (!result.acknowledged) {
       return { error: "Failed to create progression." };
     }
 
-    return { progression: progression };
+    return { progression: progressionId };
   }
 
   /**
@@ -314,3 +322,4 @@ export default class ProgressionBuilderConcept {
     };
   }
 }
+```

@@ -1,3 +1,12 @@
+---
+timestamp: 'Tue Oct 21 2025 14:53:38 GMT-0400 (Eastern Daylight Time)'
+parent: '[[../20251021_145338.433bff10.md]]'
+content_id: 59d507627ae200957640cbaf3a7e903f4b8cedb7ca10434f5dcc47a5e8535d46
+---
+
+# file: src/concepts/PlayBack/PlayBackConcept.ts
+
+```typescript
 import { Collection, Db } from "npm:mongodb";
 import { Empty, ID } from "../../utils/types.ts"; // Adjusted path
 import { freshID } from "../../utils/database.ts"; // Adjusted path
@@ -213,3 +222,4 @@ export default class PlayBackConcept {
     return { sequence: sequenceData, instrument };
   }
 }
+```
