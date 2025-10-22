@@ -3,6 +3,8 @@ import { getDb } from "@utils/database.ts";
 import { walk } from "jsr:@std/fs";
 import { parseArgs } from "jsr:@std/cli/parse-args";
 import { toFileUrl } from "jsr:@std/path/to-file-url";
+import { GeminiLLM } from "@utils/gemini-llm.ts";
+import { load } from "@std/dotenv";
 
 // Parse command-line arguments for port and base URL
 const flags = parseArgs(Deno.args, {
@@ -22,6 +24,17 @@ const CONCEPTS_DIR = "src/concepts";
  */
 async function main() {
   const [db] = await getDb();
+  
+  // Load environment variables from .env file
+  await load({ export: true });
+  
+  // Initialize LLM with API key from environment
+  const apiKey = Deno.env.get("GEMINI_API_KEY");
+  if (!apiKey) {
+    throw new Error("GEMINI_API_KEY not found in environment variables");
+  }
+  const llm = new GeminiLLM({ apiKey });
+  
   const app = new Hono();
 
   app.get("/", (c) => c.text("Concept Server is running."));
@@ -56,7 +69,10 @@ async function main() {
         continue;
       }
 
-      const instance = new ConceptClass(db);
+      // Pass llm to SuggestChordConcept, only db to others
+      const instance = conceptName === "SuggestChord" 
+        ? new ConceptClass(db, llm)
+        : new ConceptClass(db);
       const conceptApiName = conceptName;
       console.log(
         `- Registering concept: ${conceptName} at ${BASE_URL}/${conceptApiName}`,

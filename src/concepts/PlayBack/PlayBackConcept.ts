@@ -32,7 +32,7 @@ export default class PlayBackConcept {
    * @effects Creates a new PlaybackSettings for progression with default values for instrument ('Grand Piano') and secondsPerChord (1).
    */
   async initializeSettings(
-    progressionId: Progression
+    {progressionId}: {progressionId: Progression}
   ): Promise<PlaybackSettings | {error: string}> {
     const existingSettings = await this.settings.findOne({ _id: progressionId });
     if (existingSettings) {

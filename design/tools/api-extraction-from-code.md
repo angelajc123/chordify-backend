@@ -2476,3 +2476,44 @@ Here is the updated API documentation with the field names corrected to "progres
 ```
 
 ---
+
+# prompt: why are all of these POST requests?
+# response:
+
+This is a great question! The reason all endpoints are specified as `POST` requests is a deliberate design choice outlined in the "API Structure Rules" section of the prompt:
+
+*   **HTTP Method:** All endpoints use the `POST` method.
+
+While traditional RESTful APIs often differentiate between `GET` for fetching data (queries) and `POST`/`PUT`/`DELETE` for modifying data (actions), this Concept Specification paradigm adopts a unified approach for several reasons:
+
+1.  **"Action-Oriented" Design:** The Concept Specification defines "actions" and "queries" as distinct operations on the concept's state, rather than strictly adhering to resource-oriented REST principles. Even queries (methods starting with `_`) are viewed as specific operations with potentially complex input parameters. `POST` is generally well-suited for any operation that takes input in a request body and performs a defined step.
+
+2.  **Consistent Request Body for All Operations:** Both actions and queries in this model take input arguments as a single JSON object in the request body. `POST` is the standard HTTP method for sending data in the request body, making it a natural fit for this consistent input format, regardless of whether the operation is a read or a write. Using `GET` for queries with complex or numerous parameters can lead to unwieldy URLs (due to query string limitations), whereas `POST` avoids this by using the request body.
+
+3.  **Simplification and Uniformity:** By enforcing a single HTTP method (`POST`) for all interactions, the API becomes simpler and more uniform for developers. There's no need to decide which HTTP verb to use based on the operation's nature; `POST` is always the answer. This can reduce cognitive load and potential for error in API integration.
+
+4.  **Error Handling and State Changes:** Even queries can have "requirements" (preconditions) and return "errors" if those requirements aren't met, much like actions. This blurring of lines between "safe" (GET) and "unsafe" (POST) operations, combined with the focus on state changes and results, makes `POST` a practical choice for a consistent operational model.
+
+In essence, this design prioritizes an explicit, action-like invocation style for all concept operations over strict adherence to traditional RESTful resource management.
+
+# prompt: But some of the functions are just queries. Why are those POST requests?
+# response: 
+# response:
+
+You're absolutely right to press on this point, as it goes against common REST API conventions where `GET` is typically used for queries (read-only operations that are idempotent and safe).
+
+The core reason why even queries are `POST` requests in this specification comes directly from the "API Structure Rules" defined at the beginning of the prompt:
+
+*   **HTTP Method:** All endpoints use the `POST` method.
+
+This is a **deliberate design choice** within this "Concept Specification" framework, driven by the following considerations:
+
+1.  **Unified Interaction Model (RPC-like):** The concept server isn't strictly building a RESTful API in the purest sense (resource-oriented with standard HTTP verbs for CRUD). Instead, it's presenting an **RPC (Remote Procedure Call) style API over HTTP**. In this model, every interaction with a concept is treated like calling a function or method. `POST` is a very common HTTP method for initiating *any* kind of RPC call, regardless of whether it's a read or a write. It signals that an operation is being invoked on the server.
+
+2.  **Complex Input Parameters:** Even query functions, like `_getProgression({ progressionId: ProgressionID })`, can have input arguments. If a query needed multiple or complex parameters (e.g., filtering criteria, pagination details, nested objects), sending them via a `GET` request's URL query parameters can become cumbersome, hit URL length limits, or expose sensitive data in logs more easily. By using `POST`, all input arguments (for both actions and queries) are consistently sent in the **request body as a JSON object**. This provides a more flexible and uniform way to pass data.
+
+3.  **Consistency and Simplicity for Developers:** By dictating that *all* operations use `POST`, the API simplifies the mental model for client-side developers. They don't need to evaluate whether an operation is a "read" or a "write" to decide on the HTTP verb. Every interaction follows the same pattern: `POST` to `/{conceptName}/{actionOrQueryName}` with a JSON body. This reduces cognitive load and potential for implementation errors.
+
+4.  **"Preconditions as Firing Conditions" Apply to Queries Too:** The concept specification explicitly states, "preconditions are firing conditions." Even for queries, the concept has "requires" clauses (e.g., `_getProgression` "requires progressionId is a valid ID of an existing progression"). While `GET` requests can conceptually have preconditions, treating all operations as "invocations" (which `POST` implies) where inputs are validated against "firing conditions" maintains a consistent mental model across the concept's entire public interface.
+
+In summary, while it diverges from classic REST conventions, the use of `POST` for all endpoints, including queries, in this "Concept Server" API is a design decision aimed at **uniformity, simplified parameter passing, and an RPC-like interaction model** consistent with how the concepts define their "actions" and "queries."

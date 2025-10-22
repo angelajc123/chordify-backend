@@ -2,7 +2,7 @@ import { Collection, Db, ObjectId } from "npm:mongodb";
 import { Empty, ID } from "@utils/types.ts";
 import { GeminiLLM } from "@utils/gemini-llm.ts";
 
-const NUM_SUGGESTIONS = 16;
+const NUM_SUGGESTIONS = 24;
 const PREFIX = "SuggestChord" + ".";
 type Progression = ID;
 
@@ -44,8 +44,8 @@ export default class SuggestChordConcept {
     const newPreferences: SuggestionPreferences = {
       _id: progressionId,
       preferredGenre: "Pop",
-      complexityLevel: "Basic",
-      key: "Cmaj",
+      complexityLevel: "Simple",
+      key: "C",
     };
 
     await this.preferences.insertOne(newPreferences);

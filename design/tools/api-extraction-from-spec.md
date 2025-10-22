@@ -83,4 +83,3 @@ Generate the output in Markdown using the following template. For each action an
 # prompt:
 
 Now, analyze the following Concept Specification and generate the API documentation based on these instructions.
-

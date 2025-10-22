@@ -1,3 +1,12 @@
+---
+timestamp: 'Tue Oct 21 2025 17:39:37 GMT-0400 (Eastern Daylight Time)'
+parent: '[[../20251021_173937.9e1309c0.md]]'
+content_id: 71710bcb524e3e1452c8eecad01f94e7715e0b8824e6b6089882f8f385ebe15c
+---
+
+# file: src/concepts/ProgressionBuilder/ProgressionBuilderConcept.ts
+
+```typescript
 import { Collection, Db } from "npm:mongodb";
 import { Empty, ID } from "@utils/types.ts";
 import { freshID } from "@utils/database.ts";
@@ -301,3 +310,4 @@ export default class ProgressionBuilderConcept {
     };
   }
 }
+```
