@@ -2,7 +2,7 @@
     "imports": {
         "@concepts/": "./src/concepts/",
         "@google/generative-ai": "npm:@google/generative-ai@^0.24.1",
-        "@shared/": "./shared/",
+        "@shared/": "./src/shared/",
         "@std/dotenv": "jsr:@std/dotenv@^0.225.0",
         "@utils/": "./src/utils/"
     },
