@@ -1,0 +1,260 @@
+import { Collection, Db, ObjectId } from "npm:mongodb";
+import { Empty, ID } from "@utils/types.ts";
+import { GeminiLLM } from "@utils/gemini-llm.ts";
+import { isValidChord } from "../ProgressionBuilder/ProgressionBuilder.ts";
+import { Key } from "npm:tonal";
+import { NUM_SUGGESTIONS, GENRES, COMPLEXITY_LEVELS } from "@shared/constants.ts";
+
+const PREFIX = "SuggestChord" + ".";
+type Progression = ID;
+
+interface SuggestionPreferences {
+  _id: Progression;
+  genre: string;
+  complexity: string;
+  key: string;
+}
+
+function isValidKey(key: string): boolean {
+  return Key.majorKey(key).tonic != "" || Key.minorKey(key).tonic != "";
+}
+
+export default class SuggestChordConcept {
+  private preferences: Collection<SuggestionPreferences>;
+  private llm: GeminiLLM;
+
+  constructor(db: Db, llm: GeminiLLM) {
+    this.preferences = db.collection(PREFIX + "preferences");
+    this.llm = llm;
+  }
+
+  async initializePreferences(
+    { progressionId }: { progressionId: Progression },
+  ): Promise<{ preferences: SuggestionPreferences } | { error: string }> {
+    const existing = await this.preferences.findOne({ _id: progressionId });
+    if (existing) {
+      return {
+        error: `Preferences for progression ${progressionId} already exist.`,
+      };
+    }
+
+    const defaultPreferences: SuggestionPreferences = {
+      _id: progressionId,
+      genre: "Pop",
+      complexity: "Simple",
+      key: "C",
+    };
+
+    await this.preferences.insertOne(defaultPreferences);
+    return { preferences: defaultPreferences };
+  }
+
+  async setGenre(
+    { progressionId, genre }: {
+      progressionId: Progression;
+      genre: string;
+    },
+  ): Promise<Empty | { error: string }> {
+    if (!GENRES.includes(genre)) {
+      return { error: `Genre must be one of ${GENRES.join(", ")}.` };
+    }
+
+    const result = await this.preferences.updateOne(
+      { _id: progressionId },
+      { $set: { genre } },
+    );
+
+    if (result.matchedCount === 0) {
+      return { error: `Preferences for progression ${progressionId} not found.` };
+    }
+    return {};
+  }
+
+  async setComplexity(
+    { progressionId, complexity }: {
+      progressionId: Progression;
+      complexity: string;
+    },
+  ): Promise<Empty | { error: string }> {
+    if (!COMPLEXITY_LEVELS.includes(complexity)) {
+      return { error: `Complexity must be one of ${COMPLEXITY_LEVELS.join(", ")}.` };
+    }
+
+    const result = await this.preferences.updateOne(
+      { _id: progressionId },
+      { $set: { complexity } },
+    );
+
+    if (result.matchedCount === 0) {
+      return { error: `Preferences for progression ${progressionId} not found.` };
+    }
+    return {};
+  }
+
+  async setKey(
+    { progressionId, key }: { progressionId: Progression; key: string },
+  ): Promise<Empty | { error: string }> {
+    if (!isValidKey(key)) {
+      return { error: `Key must be a valid major or minor key.` };
+    }
+
+    const result = await this.preferences.updateOne(
+      { _id: progressionId },
+      { $set: { key } },
+    );
+
+    if (result.matchedCount === 0) {
+      return { error: `Preferences for progression ${progressionId} not found.` };
+    }
+    return {};
+  }
+
+  async getSuggestionPreferences(
+    { progressionId }: { progressionId: Progression },
+  ): Promise<
+    { preferences: SuggestionPreferences } | {
+      error: string;
+    }
+  > {
+    const preferences = await this.preferences.findOne({ _id: progressionId });
+    if (!preferences) {
+      return { error: `Preferences for progression ${progressionId} not found.` };
+    }
+
+    return { preferences: preferences };
+  }
+
+  async suggestChord(
+    { progressionId, chords, position }: {
+      progressionId: Progression;
+      chords: (string | null)[];
+      position: number;
+    },
+  ): Promise<{ suggestedChords: string[] } | { error: string }> {
+    if (position < 0 || position >= chords.length) {
+      return { error: `Invalid position: ${position}. Must be within 0 and ${chords.length - 1}.` };
+    }
+
+    const prefs = await this.preferences.findOne({ _id: progressionId });
+    if (!prefs) {
+      return { error: `Preferences for progression ${progressionId} not found.` };
+    }
+
+    const currentProgressionString = chords.map((c) => c === null ? "EMPTY" : c).join(" - ");
+
+    const prompt = `
+      You are an expert harmony assistant specializing in Western tonal music theory.
+      You generate harmonically coherent chord suggestions that fit naturally within a given chord progression, according to the musical key, genre, and complexity level.
+
+      INPUT PARAMETERS
+      - Key: ${prefs.key}
+      - Genre: ${prefs.genre}
+      - Complexity Level: ${prefs.complexity}
+      - Progression: ${currentProgressionString}
+      - Position: ${position}
+      - Number of Suggestions: ${NUM_SUGGESTIONS * 2}
+
+      Progressions are written using standard chord symbols (e.g., "C", "Am", "F", "G"), or "EMPTY" for missing chords.
+      Positions are zero-indexed.
+
+      YOUR TASK:
+      Suggest ${NUM_SUGGESTIONS * 2} musically appropriate chords for the given Position in the progression.
+
+      Your suggestions should:
+      - Respect the key and genre stylistic norms.
+      - Reflect the complexity level (e.g., basic triads for beginner, extended or borrowed chords for advanced).
+      - Fit smoothly with the surrounding chords (voice leading, harmonic function).
+      - Include both diatonic and non-diatonic options when musically justified (e.g., secondary dominants, borrowed chords, tritone substitutions).
+      - Order chords by musical likelihood or functional smoothness.
+
+      OUTPUT FORMAT:
+      Return only a comma-separated list of chord names.
+      Do not include explanations, commentary, or markdown.
+    `;
+
+    try {
+      const llmResponse = await this.llm.executeLLM(prompt);
+      const suggestedChords = llmResponse
+        .split(",")
+        .map((s) => s.trim())
+        .filter(isValidChord) // Filter out empty strings and invalid chords
+        .filter(Boolean)
+        .slice(0, NUM_SUGGESTIONS);
+
+      if (suggestedChords.length === 0) {
+        return { error: "LLM did not return valid chord suggestions." };
+      }
+
+      return { suggestedChords };
+    } catch (e) {
+      const error = e as Error;
+      console.error(`Error during LLM chord suggestion: ${error.message}`);
+      return { error: `Failed to get chord suggestions: ${error.message}` };
+    }
+  }
+
+  async suggestProgression(
+    { progressionId, length }: { progressionId: Progression; length: number },
+  ): Promise<{ chordSequence: string[] } | { error: string }> {
+    if (length <= 0) {
+      return { error: `Invalid length: ${length}. Must be greater than 0.` };
+    }
+
+    const prefs = await this.preferences.findOne({ _id: progressionId });
+    if (!prefs) {
+      return { error: `Preferences for progression ${progressionId} not found.` };
+    }
+
+    const prompt = `
+      You are an expert harmony assistant specializing in Western tonal music theory.
+      You generate complete, harmonically coherent chord progressions that fit naturally within a given key, genre, and complexity level.
+
+      INPUT PARAMETERS
+      - Key: ${prefs.key}
+      - Genre: ${prefs.genre}
+      - Complexity Level: ${prefs.complexity}
+      - Progression Length: ${length}
+
+      Each progression should:
+      - Be ${length} chords long.
+      - Use standard chord symbols (e.g., "C", "Am", "F", "G").
+      - Be harmonically consistent and stylistically appropriate for the given genre and complexity level.
+
+      YOUR TASK:
+      Generate a distinct, musically coherent chord progression that fit within the given key, genre, and complexity level.
+
+      Your progressions should:
+      - Respect the key and genre’s stylistic conventions.
+      - Reflect the specified complexity level (e.g., simple triads for beginner; extended, altered, or borrowed chords for advanced).
+      - Demonstrate smooth voice leading and clear harmonic function.
+      - Include both diatonic and tasteful non-diatonic chords when appropriate (e.g., secondary dominants, modal interchange, tritone substitutions).
+      - Follow common functional patterns (e.g., tonic–subdominant–dominant–tonic, ii–V–I in jazz, I–V–vi–IV in pop) unless the genre suggests otherwise.
+
+      OUTPUT FORMAT:
+      Return a comma-separated list of chord names.
+      Do not include explanations, commentary, or markdown.
+    `;
+
+    try {
+      const llmResponse = await this.llm.executeLLM(prompt);
+      const chordSequence = llmResponse
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean); // Filter out empty strings
+
+      if (chordSequence.length === 0) {
+        return { error: "LLM did not return a valid chord progression." };
+      }
+      if (chordSequence.length !== length) {
+          console.warn(`LLM returned ${chordSequence.length} chords but ${length} were requested. Adjusting.`);
+          // If LLM doesn't match length, try to truncate/pad. For simplicity, just return what was given.
+      }
+
+      return { chordSequence };
+    } catch (e) {
+      const error = e as Error;
+      console.error(`Error during LLM progression suggestion: ${error.message}`);
+      return { error: `Failed to get progression suggestion: ${error.message}` };
+    }
+  }
+}

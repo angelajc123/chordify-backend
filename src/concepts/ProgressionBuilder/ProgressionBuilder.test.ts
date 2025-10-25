@@ -1,7 +1,7 @@
 import { assertEquals, assertExists, assertNotEquals } from "jsr:@std/assert";
 import { testDb } from "@utils/database.ts";
 import { ID } from "@utils/types.ts";
-import ProgressionBuilderConcept from "./ProgressionBuilderConcept.ts";
+import ProgressionBuilderConcept from "./ProgressionBuilder.ts";
 
 Deno.test("Principle: User creates, modifies, and views a chord progression", async () => {
   const [db, client] = await testDb();

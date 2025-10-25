@@ -10,6 +10,6 @@
 - src/
   - concepts/
     - ConceptName/
-      - ConceptNameConcept.test.ts (tests)
-      - ConceptNameConcept.md (implementation)
+      - ConceptName.test.ts (tests)
+      - ConceptName.ts (implementation)
 - designFile.md (overall design changes)

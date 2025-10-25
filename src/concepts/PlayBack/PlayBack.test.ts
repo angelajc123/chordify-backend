@@ -1,7 +1,7 @@
 import { assertEquals, assertNotEquals, assertExists } from "jsr:@std/assert";
 import { testDb } from "../../utils/database.ts";
 import { ID } from "../../utils/types.ts";
-import PlayBackConcept from "./PlayBackConcept.ts";
+import PlayBackConcept from "./PlayBack.ts";
 import * as Tonal from "npm:tonal";
 
 const progA = "progression:alpha" as ID;
