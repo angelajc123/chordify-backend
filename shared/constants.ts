@@ -1,3 +1,5 @@
+// Shared constants for frontend and backend validation
+
 // PlayBack constants
 export const INSTRUMENTS = ["Piano", "Guitar", "Synthesizer"];
 export const MIN_SECONDS_PER_CHORD = 1;

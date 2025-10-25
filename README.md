@@ -12,4 +12,4 @@
     - ConceptName/
       - ConceptName.test.ts (tests)
       - ConceptName.ts (implementation)
-- designFile.md (overall design changes)
+- designFile.md (overall design changes)  
