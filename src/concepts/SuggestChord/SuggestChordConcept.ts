@@ -1,9 +1,7 @@
-import { Collection, Db, ObjectId } from "npm:mongodb";
+import { Collection, Db } from "npm:mongodb";
 import { Empty, ID } from "@utils/types.ts";
 import { GeminiLLM } from "@utils/gemini-llm.ts";
-import { isValidChord } from "../ProgressionBuilder/ProgressionBuilderConcept.ts";
-import { Key } from "npm:tonal";
-import { NUM_SUGGESTIONS, GENRES, COMPLEXITY_LEVELS } from "@shared/constants.ts";
+import { isValidChord, isValidKey, NUM_SUGGESTIONS, GENRES, COMPLEXITY_LEVELS } from "@shared/constants.ts";
 
 const PREFIX = "SuggestChord" + ".";
 type Progression = ID;
@@ -13,10 +11,6 @@ interface SuggestionPreferences {
   genre: string;
   complexity: string;
   key: string;
-}
-
-function isValidKey(key: string): boolean {
-  return Key.majorKey(key).tonic != "" || Key.minorKey(key).tonic != "";
 }
 
 export default class SuggestChordConcept {

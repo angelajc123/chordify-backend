@@ -1,7 +1,7 @@
 import { Collection, Db } from "npm:mongodb";
 import { Empty, ID } from "@utils/types.ts";
 import { freshID } from "@utils/database.ts";
-import { Chord } from "npm:tonal";
+import { isValidChord } from "@shared/constants.ts";
 
 const PREFIX = "ProgressionBuilder" + ".";
 
@@ -15,10 +15,6 @@ interface Progression {
   _id: ProgressionID;
   name: string;
   chords: Slot[];
-}
-
-export function isValidChord(chord: string): boolean {
-  return !Chord.get(chord).empty;
 }
 
 export default class ProgressionBuilderConcept {
