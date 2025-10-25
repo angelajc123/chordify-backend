@@ -1,22 +1,26 @@
 import { Collection, Db, ObjectId } from "npm:mongodb";
 import { Empty, ID } from "@utils/types.ts";
 import { GeminiLLM } from "@utils/gemini-llm.ts";
+import { isValidChord } from "../ProgressionBuilder/ProgressionBuilderConcept.ts";
+import { Key } from "npm:tonal";
 
-const NUM_SUGGESTIONS = 24;
 const PREFIX = "SuggestChord" + ".";
+const NUM_SUGGESTIONS = 24;
+const GENRES = ["Pop", "Rock", "Jazz", "Classical", "Hip hop", "R&B", "Country", "Electronic"];
+const COMPLEXITY_LEVELS = ["Simple", "Intermediate", "Advanced"];
 type Progression = ID;
 
 interface SuggestionPreferences {
   _id: Progression;
-  preferredGenre: string;
-  complexityLevel: string;
+  genre: string;
+  complexity: string;
   key: string;
 }
 
-/**
- * @concept SuggestChord
- * @purpose offer users suggestions for suitable chords and progressions based on preferences
- */
+function isValidKey(key: string): boolean {
+  return Key.majorKey(key).tonic != "" || Key.minorKey(key).tonic != "";
+}
+
 export default class SuggestChordConcept {
   private preferences: Collection<SuggestionPreferences>;
   private llm: GeminiLLM;
@@ -26,14 +30,9 @@ export default class SuggestChordConcept {
     this.llm = llm;
   }
 
-  /**
-   * @action initializePreferences
-   * @requires progression does not exist in SuggestionPreferences
-   * @effects creates a new SuggestionPreferences for progression with default values for preferredGenre, complexityLevel, and key.
-   */
   async initializePreferences(
     { progressionId }: { progressionId: Progression },
-  ): Promise<SuggestionPreferences | { error: string }> {
+  ): Promise<{ preferences: SuggestionPreferences } | { error: string }> {
     const existing = await this.preferences.findOne({ _id: progressionId });
     if (existing) {
       return {
@@ -41,31 +40,30 @@ export default class SuggestChordConcept {
       };
     }
 
-    const newPreferences: SuggestionPreferences = {
+    const defaultPreferences: SuggestionPreferences = {
       _id: progressionId,
-      preferredGenre: "Pop",
-      complexityLevel: "Simple",
+      genre: "Pop",
+      complexity: "Simple",
       key: "C",
     };
 
-    await this.preferences.insertOne(newPreferences);
-    return newPreferences;
+    await this.preferences.insertOne(defaultPreferences);
+    return { preferences: defaultPreferences };
   }
 
-  /**
-   * @action setPreferredGenre
-   * @requires progression exists in SuggestionPreferences
-   * @effects updates the SuggestionPreferences for progression with the given genre.
-   */
-  async setPreferredGenre(
-    { progressionId, preferredGenre }: {
+  async setGenre(
+    { progressionId, genre }: {
       progressionId: Progression;
-      preferredGenre: string;
+      genre: string;
     },
   ): Promise<Empty | { error: string }> {
+    if (!GENRES.includes(genre)) {
+      return { error: `Genre must be one of ${GENRES.join(", ")}.` };
+    }
+
     const result = await this.preferences.updateOne(
       { _id: progressionId },
-      { $set: { preferredGenre } },
+      { $set: { genre } },
     );
 
     if (result.matchedCount === 0) {
@@ -74,20 +72,19 @@ export default class SuggestChordConcept {
     return {};
   }
 
-  /**
-   * @action setComplexityLevel
-   * @requires progression exists in SuggestionPreferences
-   * @effects updates the SuggestionPreferences for progression with the given complexityLevel.
-   */
-  async setComplexityLevel(
-    { progressionId, complexityLevel }: {
+  async setComplexity(
+    { progressionId, complexity }: {
       progressionId: Progression;
-      complexityLevel: string;
+      complexity: string;
     },
   ): Promise<Empty | { error: string }> {
+    if (!COMPLEXITY_LEVELS.includes(complexity)) {
+      return { error: `Complexity must be one of ${COMPLEXITY_LEVELS.join(", ")}.` };
+    }
+
     const result = await this.preferences.updateOne(
       { _id: progressionId },
-      { $set: { complexityLevel } },
+      { $set: { complexity } },
     );
 
     if (result.matchedCount === 0) {
@@ -96,14 +93,13 @@ export default class SuggestChordConcept {
     return {};
   }
 
-  /**
-   * @action setKey
-   * @requires progression exists in SuggestionPreferences
-   * @effects updates the SuggestionPreferences for progression with the given key.
-   */
   async setKey(
     { progressionId, key }: { progressionId: Progression; key: string },
   ): Promise<Empty | { error: string }> {
+    if (!isValidKey(key)) {
+      return { error: `Key must be a valid major or minor key.` };
+    }
+
     const result = await this.preferences.updateOne(
       { _id: progressionId },
       { $set: { key } },
@@ -115,31 +111,21 @@ export default class SuggestChordConcept {
     return {};
   }
 
-  /**
-   * @action getProgressionPreferences
-   * @requires progression exists in SuggestionPreferences
-   * @effects returns the SuggestionPreferences for progression.
-   */
-  async getProgressionPreferences(
+  async getSuggestionPreferences(
     { progressionId }: { progressionId: Progression },
   ): Promise<
-    { progressionPreferences: SuggestionPreferences } | {
+    { preferences: SuggestionPreferences } | {
       error: string;
     }
   > {
-    const prefs = await this.preferences.findOne({ _id: progressionId });
-    if (!prefs) {
+    const preferences = await this.preferences.findOne({ _id: progressionId });
+    if (!preferences) {
       return { error: `Preferences for progression ${progressionId} not found.` };
     }
-    return { progressionPreferences: prefs };
+
+    return { preferences: preferences };
   }
 
-  /**
-   * @action suggestChord
-   * @requires progression exists in SuggestionPreferences, 0 <= position < chords.length
-   * @effects returns a list of suggested chords to put in position in chords, generated by an LLM
-   *          given the context of the SuggestionPreferences for progression and the chords before and after it.
-   */
   async suggestChord(
     { progressionId, chords, position }: {
       progressionId: Progression;
@@ -164,17 +150,17 @@ export default class SuggestChordConcept {
 
       INPUT PARAMETERS
       - Key: ${prefs.key}
-      - Genre: ${prefs.preferredGenre}
-      - Complexity Level: ${prefs.complexityLevel}
+      - Genre: ${prefs.genre}
+      - Complexity Level: ${prefs.complexity}
       - Progression: ${currentProgressionString}
       - Position: ${position}
-      - Number of Suggestions: ${NUM_SUGGESTIONS}
+      - Number of Suggestions: ${NUM_SUGGESTIONS * 2}
 
       Progressions are written using standard chord symbols (e.g., "C", "Am", "F", "G"), or "EMPTY" for missing chords.
       Positions are zero-indexed.
 
       YOUR TASK:
-      Suggest ${NUM_SUGGESTIONS} musically appropriate chords for the given Position in the progression.
+      Suggest ${NUM_SUGGESTIONS * 2} musically appropriate chords for the given Position in the progression.
 
       Your suggestions should:
       - Respect the key and genre stylistic norms.
@@ -193,7 +179,9 @@ export default class SuggestChordConcept {
       const suggestedChords = llmResponse
         .split(",")
         .map((s) => s.trim())
-        .filter(Boolean); // Filter out empty strings
+        .filter(isValidChord) // Filter out empty strings and invalid chords
+        .filter(Boolean)
+        .slice(0, NUM_SUGGESTIONS);
 
       if (suggestedChords.length === 0) {
         return { error: "LLM did not return valid chord suggestions." };
@@ -207,12 +195,6 @@ export default class SuggestChordConcept {
     }
   }
 
-  /**
-   * @action suggestProgression
-   * @requires progression exists in SuggestionPreferences, length > 0
-   * @effects returns a chord progression of length length, generated by an LLM
-   *          given the context of the SuggestionPreferences for progression.
-   */
   async suggestProgression(
     { progressionId, length }: { progressionId: Progression; length: number },
   ): Promise<{ chordSequence: string[] } | { error: string }> {
@@ -231,8 +213,8 @@ export default class SuggestChordConcept {
 
       INPUT PARAMETERS
       - Key: ${prefs.key}
-      - Genre: ${prefs.preferredGenre}
-      - Complexity Level: ${prefs.complexityLevel}
+      - Genre: ${prefs.genre}
+      - Complexity Level: ${prefs.complexity}
       - Progression Length: ${length}
 
       Each progression should:

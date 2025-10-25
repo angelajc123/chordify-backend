@@ -1,11 +1,11 @@
 import { Collection, Db } from "npm:mongodb";
-import { Empty, ID } from "../../utils/types.ts"; // Adjusted path
-import { freshID } from "../../utils/database.ts"; // Adjusted path
-import * as Tonal from "npm:tonal"; // Import Tonal for chord processing
-// import * as Tone from "npm:tone"; // Tone.js is a client-side library for Web Audio API.
-// In a backend concept, we will provide the data for a client to play the audio.
+import { Empty, ID } from "../../utils/types.ts";
+import * as Tonal from "npm:tonal";
 
 const PREFIX = "PlayBack" + ".";
+const INSTRUMENTS = ["Piano", "Guitar", "Synthesizer"];
+const MIN_SECONDS_PER_CHORD = 1;
+const MAX_SECONDS_PER_CHORD = 10;
 
 type Progression = ID;
 
@@ -15,10 +15,6 @@ interface PlaybackSettings {
   secondsPerChord: number;
 };
 
-/**
- * @concept PlayBack
- * @purpose To allow users to listen to progressions easily, enabling rapid feedback and iteration during composition.
- */
 export default class PlayBackConcept {
   private settings: Collection<PlaybackSettings>;
 
@@ -26,14 +22,9 @@ export default class PlayBackConcept {
     this.settings = this.db.collection(PREFIX + "settings");
   }
 
-  /**
-   * Action: Initializes playback settings for a given progression.
-   * @requires progression does not exist in PlaybackSettings.
-   * @effects Creates a new PlaybackSettings for progression with default values for instrument ('Grand Piano') and secondsPerChord (1).
-   */
   async initializeSettings(
-    {progressionId}: {progressionId: Progression}
-  ): Promise<PlaybackSettings | {error: string}> {
+    { progressionId }: { progressionId: Progression }
+  ): Promise<{ settings: PlaybackSettings } | {error: string}> {
     const existingSettings = await this.settings.findOne({ _id: progressionId });
     if (existingSettings) {
       return {
@@ -43,22 +34,24 @@ export default class PlayBackConcept {
 
     const defaultSettings: PlaybackSettings = {
       _id: progressionId,
-      instrument: "Grand Piano",
+      instrument: "Piano",
       secondsPerChord: 1,
     };
 
     await this.settings.insertOne(defaultSettings);
-    return defaultSettings;
+    return { settings: defaultSettings };
   }
 
-  /**
-   * Action: Sets the instrument for a progression's playback.
-   * @requires progression exists in PlaybackSettings.
-   * @effects Updates the PlaybackSettings for progression with the given instrument.
-   */
   async setInstrument(
-    { progressionId, instrument }: { progressionId: Progression; instrument: string },
+    { progressionId, instrument }: {
+      progressionId: Progression;
+      instrument: string;
+    },
   ): Promise<Empty | { error: string }> {
+    if (!INSTRUMENTS.includes(instrument)) {
+      return { error: `Instrument must be one of ${INSTRUMENTS.join(", ")}.` };
+    }
+
     const result = await this.settings.updateOne(
       { _id: progressionId },
       { $set: { instrument } },
@@ -72,19 +65,14 @@ export default class PlayBackConcept {
     return {};
   }
 
-  /**
-   * Action: Sets the duration (in seconds) for each chord in a progression's playback.
-   * @requires progression exists in PlaybackSettings.
-   * @effects Updates the PlaybackSettings for progression with the given secondsPerChord.
-   */
   async setSecondsPerChord(
     { progressionId, secondsPerChord }: {
       progressionId: Progression;
       secondsPerChord: number;
     },
   ): Promise<Empty | { error: string }> {
-    if (secondsPerChord <= 0) {
-      return { error: "secondsPerChord must be a positive number." };
+    if (secondsPerChord < MIN_SECONDS_PER_CHORD || secondsPerChord > MAX_SECONDS_PER_CHORD) {
+      return { error: `secondsPerChord must be between ${MIN_SECONDS_PER_CHORD} and ${MAX_SECONDS_PER_CHORD}.` };
     }
 
     const result = await this.settings.updateOne(
@@ -100,11 +88,9 @@ export default class PlayBackConcept {
     return {};
   }
 
-  /**
-   * Query: Retrieves the playback settings for a specific progression.
-   * @effects Returns the PlaybackSettings for progression.
-   */
-  async getProgressionSettings({ progressionId }: { progressionId: Progression }): Promise<{ settings: PlaybackSettings } | { error: string }> {
+  async getPlayBackSettings(
+    { progressionId }: { progressionId: Progression }
+  ): Promise<{ settings: PlaybackSettings } | { error: string }> {
     const settings = await this.settings.findOne({ _id: progressionId });
     if (!settings) {
       return {
@@ -114,102 +100,27 @@ export default class PlayBackConcept {
     return { settings: settings };
   }
 
-  /**
-   * Internal Helper: Converts a chord string into an array of notes using Tonal.js.
-   * @param chord The chord string (e.g., "Cmaj7", "Am").
-   * @returns An array of note names (e.g., ["C4", "E4", "G4", "B4"]) or an empty array if invalid.
-   */
-  private _getNotesFromChord(chord: string): string[] {
-    const chordData = Tonal.Chord.get(chord);
-    // Tonal.js returns `notes` as an array of pitches (e.g., ["C4", "E4", "G4"])
-    return chordData.notes;
-  }
-
-  /**
-   * Action: Provides data to play a single chord using the progression's settings.
-   * This action does not directly play audio but returns the necessary musical data
-   * and settings for a client-side audio engine (e.g., Tone.js) to perform playback.
-   * @requires progression exists in PlaybackSettings.
-   * @effects Returns an object containing the notes, instrument, and duration for the chord.
-   */
-  async playChord(
-    { progressionId, chord }: { progressionId: Progression; chord: string },
-  ): Promise<
-    { notes: string[]; instrument: string; duration: number } | { error: string }
-  > {
-    const settings = await this.getProgressionSettings(progressionId);
-    if ("error" in settings) {
-      return settings;
-    }
-    const { instrument, secondsPerChord } = settings;
-
-    const notes = this._getNotesFromChord(chord);
+  async getChordNotes(
+    { chord }: { chord: string }
+  ): Promise<{ notes: string[] } | { error: string }> {
+    const notes = Tonal.Chord.get(chord).notes;
     if (notes.length === 0) {
       return { error: `Invalid chord specified: '${chord}'.` };
     }
-
-    // In a real application, a client would receive this data and use Tone.js to play it.
-    // Example client-side usage:
-    // const synth = new Tone.Synth().toDestination();
-    // synth.triggerAttackRelease(notes, secondsPerChord);
-    return { notes, instrument, duration: secondsPerChord };
+    return { notes: notes };
   }
 
-  /**
-   * Action: Provides data to play a sequence of chords (a progression) using the progression's settings.
-   * This action does not directly play audio but returns the necessary musical data
-   * and settings for a client-side audio engine (e.g., Tone.js) to perform playback.
-   * @requires progression exists in PlaybackSettings.
-   * @effects Returns an array of objects, each representing a chord or rest with its notes and duration, along with the instrument.
-   */
-  async playProgression(
-    { progressionId, chordSequence }: {
-      progressionId: Progression;
-      chordSequence: (string | null)[];
-    },
-  ): Promise<
-    | {
-      sequence: ({ notes: string[]; duration: number } | {
-        rest: true;
-        duration: number;
-      })[];
-      instrument: string;
-    }
-    | { error: string }
-  > {
-    const settings = await this.getProgressionSettings(progressionId);
-    if ("error" in settings) {
-      return settings;
-    }
-    const { instrument, secondsPerChord } = settings;
-
-    const sequenceData: (
-      | { notes: string[]; duration: number }
-      | { rest: true; duration: number }
-    )[] = [];
-
-    for (const chord of chordSequence) {
-      if (chord === null) {
-        sequenceData.push({ rest: true, duration: secondsPerChord });
-      } else {
-        const notes = this._getNotesFromChord(chord);
-        if (notes.length === 0) {
-          return { error: `Invalid chord specified in sequence: '${chord}'.` };
-        }
-        sequenceData.push({ notes, duration: secondsPerChord });
+  async getProgressionNotes(
+    { progression }: { progression: string[] }
+  ): Promise<{ notes: string[][] } | { error: string }> {
+    const notes: string[][] = [];
+    for (const chord of progression) {
+      const response = await this.getChordNotes({ chord });
+      if ("error" in response) {
+        return { error: response.error };
       }
+      notes.push(response.notes);
     }
-
-    // In a real application, a client would receive this data and use Tone.js to play it.
-    // Example client-side usage (simplified):
-    // const synth = new Tone.Synth().toDestination();
-    // let currentTime = Tone.now();
-    // for (const item of sequenceData) {
-    //   if ('notes' in item) {
-    //     synth.triggerAttackRelease(item.notes, item.duration, currentTime);
-    //   }
-    //   currentTime += item.duration;
-    // }
-    return { sequence: sequenceData, instrument };
+    return { notes: notes };
   }
 }

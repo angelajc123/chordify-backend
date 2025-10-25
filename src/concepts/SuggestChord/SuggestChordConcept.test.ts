@@ -4,28 +4,18 @@ import { ID } from "@utils/types.ts";
 import SuggestChordConcept from "./SuggestChordConcept.ts";
 import { GeminiLLM } from "@utils/gemini-llm.ts";
 
-// Mock GeminiLLM for predictable testing outcomes
 class MockGeminiLLM extends GeminiLLM {
   private mockResponses: Map<string, string> = new Map();
   private errorToThrow: Error | null = null;
 
   constructor() {
-    // Pass a dummy config, as the mock will not make actual API calls
     super({ apiKey: "mock-api-key" });
   }
 
-  /**
-   * Sets a mock response for a specific prompt or a prompt containing a substring.
-   * @param promptKey A substring of the expected prompt or the full prompt.
-   * @param response The string response to return for that prompt.
-   */
   setMockResponse(promptKey: string, response: string) {
     this.mockResponses.set(promptKey, response);
   }
 
-  /**
-   * Configures the mock to throw a specific error on the next `executeLLM` call.
-   */
   setError(error: Error) {
     this.errorToThrow = error;
   }
@@ -37,26 +27,22 @@ class MockGeminiLLM extends GeminiLLM {
       throw error;
     }
 
-    // Try to find a response based on substring matching
     for (const [key, response] of this.mockResponses.entries()) {
       if (prompt.includes(key)) {
         return Promise.resolve(response);
       }
     }
 
-    // Fallback if no specific mock response is found
     console.warn("No specific mock response found for prompt:", prompt);
-    // Provide a generic, plausible default to avoid test failures due to unmocked LLM calls
-    if (prompt.includes("Suggest 16 musically appropriate chords")) {
-        return Promise.resolve("C,G,Am,F,Dm,E7,A7,D7,G7,Cm,Eb,Ab,Bb,Fm,Db,Gb");
+    if (prompt.includes("Suggest 48 musically appropriate chords")) {
+        return Promise.resolve("C,G,Am,F,Dm,E7,A7,D7,G7,Cm,Eb,Ab,Bb,Fm,Db,Gb,C7,Gm,Fmaj7,Em,Bm,D,A,E");
     } else if (prompt.includes("Generate a distinct, musically coherent chord progression")) {
         return Promise.resolve("C,G,Am,F");
     }
-    return Promise.resolve(""); // Return empty for unhandled cases
+    return Promise.resolve("");
   }
 }
 
-// Define some IDs for testing purposes
 const progA = "progression:A" as ID;
 const progB = "progression:B" as ID;
 const progC = "progression:C" as ID;
@@ -66,10 +52,9 @@ Deno.test("Principle: User initializes preferences, sets context, and gets sugge
   const mockLlm = new MockGeminiLLM();
   const concept = new SuggestChordConcept(db, mockLlm);
 
-  // Set mock responses for LLM calls based on prompt content
   mockLlm.setMockResponse(
-    "Suggest 16 musically appropriate chords",
-    "C,G,Am,F,Dm,E7,A7,D7,G7,Cm,Eb,Ab,Bb,Fm,Db,Gb",
+    "Suggest 48 musically appropriate chords",
+    "C,G,Am,F,Dm,E7,A7,D7,G7,Cm,Eb,Ab,Bb,Fm,Db,Gb,C7,Gm,Fmaj7,Em,Bm,D,A,E",
   );
   mockLlm.setMockResponse(
     "Generate a distinct, musically coherent chord progression",
@@ -80,30 +65,29 @@ Deno.test("Principle: User initializes preferences, sets context, and gets sugge
     // 1. Initialize preferences for a progression
     const initResult = await concept.initializePreferences({ progressionId: progA });
     assertNotEquals("error" in initResult, true, "Initialization should succeed");
-    const { _id: progressionId } = initResult as { _id: ID };
-    assertEquals(progressionId, progA, "Initialized progression ID should match input");
+    const { preferences } = initResult as { preferences: any };
+    assertEquals(preferences._id, progA, "Initialized progression ID should match input");
     assertEquals(
-      (initResult as any).preferredGenre,
+      preferences.genre,
       "Pop",
       "Default genre should be 'Pop'",
-    ); // Check default values
+    );
 
     // 2. User sets their preferred genre, complexity, and key
-    await concept.setPreferredGenre({ progressionId: progA, preferredGenre: "Jazz" });
-    await concept.setComplexityLevel({ progressionId: progA, complexityLevel: "Advanced" });
-    await concept.setKey({ progressionId: progA, key: "Dmin" });
+    await concept.setGenre({ progressionId: progA, genre: "Jazz" });
+    await concept.setComplexity({ progressionId: progA, complexity: "Advanced" });
+    await concept.setKey({ progressionId: progA, key: "D" });
 
-    // Verify preferences were set correctly using getProgressionPreferences
-    const getPrefsResult = await concept.getProgressionPreferences({ progressionId: progA });
+    const getPrefsResult = await concept.getSuggestionPreferences({ progressionId: progA });
     assertNotEquals("error" in getPrefsResult, true, "Getting preferences should succeed");
-    const { progressionPreferences } = getPrefsResult as any;
-    assertEquals(progressionPreferences.preferredGenre, "Jazz", "Genre should be updated to Jazz");
+    const { preferences: updatedPrefs } = getPrefsResult as any;
+    assertEquals(updatedPrefs.genre, "Jazz", "Genre should be updated to Jazz");
     assertEquals(
-      progressionPreferences.complexityLevel,
+      updatedPrefs.complexity,
       "Advanced",
       "Complexity level should be updated to Advanced",
     );
-    assertEquals(progressionPreferences.key, "Dmin", "Key should be updated to Dmin");
+    assertEquals(updatedPrefs.key, "D", "Key should be updated to D");
 
     // 3. User generates a whole progression
     const suggestProgressionResult = await concept.suggestProgression({
@@ -122,9 +106,9 @@ Deno.test("Principle: User initializes preferences, sets context, and gets sugge
     assertExists(suggestedChords, "Suggested chords array should exist");
     assertArrayIncludes(
       suggestedChords,
-      ["C", "G", "Am", "F", "Dm", "E7", "A7", "D7", "G7", "Cm", "Eb", "Ab", "Bb", "Fm", "Db", "Gb"],
+      ["C", "G", "Am", "F", "Dm", "E7", "A7", "D7"],
       "Suggested chords should match mock",
-    ); // Based on mock LLM response
+    );
   } finally {
     await client.close();
   }
@@ -139,9 +123,9 @@ Deno.test("Action: initializePreferences - successful creation and existing prog
     // Success case: Initialize for progA
     const result1 = await concept.initializePreferences({ progressionId: progA });
     assertNotEquals("error" in result1, true, "Should initialize successfully for progA");
-    const { _id: createdProgressionId } = result1 as { _id: ID };
-    assertEquals(createdProgressionId, progA, "Created progression ID should be progA");
-    assertEquals((result1 as any).preferredGenre, "Pop", "Default genre should be Pop"); // Check default values
+    const { preferences: prefs1 } = result1 as { preferences: any };
+    assertEquals(prefs1._id, progA, "Created progression ID should be progA");
+    assertEquals(prefs1.genre, "Pop", "Default genre should be Pop"); // Check default values
 
     // Attempt to initialize again for progA (should fail)
     const result2 = await concept.initializePreferences({ progressionId: progA });
@@ -156,24 +140,24 @@ Deno.test("Action: initializePreferences - successful creation and existing prog
   }
 });
 
-Deno.test("Action: setPreferredGenre - successful update and non-existent progression", async () => {
+Deno.test("Action: setGenre - successful update and non-existent progression", async () => {
   const [db, client] = await testDb();
   const mockLlm = new MockGeminiLLM();
   const concept = new SuggestChordConcept(db, mockLlm);
 
   try {
-    await concept.initializePreferences({ progressionId: progA }); // Setup preferences for progA
+    await concept.initializePreferences({ progressionId: progA });
 
     // Success case: Update genre for progA
-    const setResult = await concept.setPreferredGenre({ progressionId: progA, preferredGenre: "Rock" });
+    const setResult = await concept.setGenre({ progressionId: progA, genre: "Rock" });
     assertNotEquals("error" in setResult, true, "Should update genre successfully for progA");
 
     // Verify the update
-    const getResult = await concept.getProgressionPreferences({ progressionId: progA });
-    assertEquals((getResult as any).progressionPreferences.preferredGenre, "Rock", "Genre should be updated to Rock");
+    const getResult = await concept.getSuggestionPreferences({ progressionId: progA });
+    assertEquals((getResult as any).preferences.genre, "Rock", "Genre should be updated to Rock");
 
     // Non-existent progression: Attempt to update genre for progB
-    const nonExistentResult = await concept.setPreferredGenre({ progressionId: progB, preferredGenre: "Blues" });
+    const nonExistentResult = await concept.setGenre({ progressionId: progB, genre: "Rock" });
     assertEquals("error" in nonExistentResult, true, "Should fail for non-existent progression");
     assertEquals(
       (nonExistentResult as any).error,
@@ -185,28 +169,28 @@ Deno.test("Action: setPreferredGenre - successful update and non-existent progre
   }
 });
 
-Deno.test("Action: setComplexityLevel - successful update and non-existent progression", async () => {
+Deno.test("Action: setComplexity - successful update and non-existent progression", async () => {
   const [db, client] = await testDb();
   const mockLlm = new MockGeminiLLM();
   const concept = new SuggestChordConcept(db, mockLlm);
 
   try {
-    await concept.initializePreferences({ progressionId: progA }); // Setup preferences for progA
+    await concept.initializePreferences({ progressionId: progA });
 
     // Success case: Update complexity for progA
-    const setResult = await concept.setComplexityLevel({ progressionId: progA, complexityLevel: "Intermediate" });
+    const setResult = await concept.setComplexity({ progressionId: progA, complexity: "Intermediate" });
     assertNotEquals("error" in setResult, true, "Should update complexity successfully for progA");
 
     // Verify the update
-    const getResult = await concept.getProgressionPreferences({ progressionId: progA });
+    const getResult = await concept.getSuggestionPreferences({ progressionId: progA });
     assertEquals(
-      (getResult as any).progressionPreferences.complexityLevel,
+      (getResult as any).preferences.complexity,
       "Intermediate",
       "Complexity level should be updated to Intermediate",
     );
 
     // Non-existent progression: Attempt to update complexity for progB
-    const nonExistentResult = await concept.setComplexityLevel({ progressionId: progB, complexityLevel: "Advanced" });
+    const nonExistentResult = await concept.setComplexity({ progressionId: progB, complexity: "Advanced" });
     assertEquals("error" in nonExistentResult, true, "Should fail for non-existent progression");
     assertEquals(
       (nonExistentResult as any).error,
@@ -224,18 +208,18 @@ Deno.test("Action: setKey - successful update and non-existent progression", asy
   const concept = new SuggestChordConcept(db, mockLlm);
 
   try {
-    await concept.initializePreferences({ progressionId: progA }); // Setup preferences for progA
+    await concept.initializePreferences({ progressionId: progA });
 
     // Success case: Update key for progA
-    const setResult = await concept.setKey({ progressionId: progA, key: "Gmaj" });
+    const setResult = await concept.setKey({ progressionId: progA, key: "G" });
     assertNotEquals("error" in setResult, true, "Should update key successfully for progA");
 
     // Verify the update
-    const getResult = await concept.getProgressionPreferences({ progressionId: progA });
-    assertEquals((getResult as any).progressionPreferences.key, "Gmaj", "Key should be updated to Gmaj");
+    const getResult = await concept.getSuggestionPreferences({ progressionId: progA });
+    assertEquals((getResult as any).preferences.key, "G", "Key should be updated to G");
 
     // Non-existent progression: Attempt to update key for progB
-    const nonExistentResult = await concept.setKey({ progressionId: progB, key: "Amin" });
+    const nonExistentResult = await concept.setKey({ progressionId: progB, key: "A" });
     assertEquals("error" in nonExistentResult, true, "Should fail for non-existent progression");
     assertEquals(
       (nonExistentResult as any).error,
@@ -247,28 +231,28 @@ Deno.test("Action: setKey - successful update and non-existent progression", asy
   }
 });
 
-Deno.test("Action: getProgressionPreferences - successful retrieval and non-existent progression", async () => {
+Deno.test("Action: getSuggestionPreferences - successful retrieval and non-existent progression", async () => {
   const [db, client] = await testDb();
   const mockLlm = new MockGeminiLLM();
   const concept = new SuggestChordConcept(db, mockLlm);
 
   try {
     await concept.initializePreferences({ progressionId: progA });
-    await concept.setPreferredGenre({ progressionId: progA, preferredGenre: "Classical" });
+    await concept.setGenre({ progressionId: progA, genre: "Classical" });
 
     // Success case: Retrieve preferences for progA
-    const getResult = await concept.getProgressionPreferences({ progressionId: progA });
+    const getResult = await concept.getSuggestionPreferences({ progressionId: progA });
     assertNotEquals("error" in getResult, true, "Should retrieve preferences successfully");
-    const { progressionPreferences } = getResult as any;
-    assertEquals(progressionPreferences._id, progA, "Retrieved progression ID should be progA");
+    const { preferences } = getResult as any;
+    assertEquals(preferences._id, progA, "Retrieved progression ID should be progA");
     assertEquals(
-      progressionPreferences.preferredGenre,
+      preferences.genre,
       "Classical",
       "Retrieved genre should match the updated value",
     );
 
     // Non-existent progression: Attempt to retrieve preferences for progB
-    const nonExistentResult = await concept.getProgressionPreferences({ progressionId: progB });
+    const nonExistentResult = await concept.getSuggestionPreferences({ progressionId: progB });
     assertEquals("error" in nonExistentResult, true, "Should fail for non-existent progression");
     assertEquals(
       (nonExistentResult as any).error,
@@ -285,12 +269,11 @@ Deno.test("Action: suggestChord - requirements and effects", async () => {
   const mockLlm = new MockGeminiLLM();
   const concept = new SuggestChordConcept(db, mockLlm);
 
-  // Set a simplified mock response for chord suggestions
-  mockLlm.setMockResponse("Suggest 16 musically appropriate chords", "C,F,G");
+  mockLlm.setMockResponse("Suggest 48 musically appropriate chords", "C,F,G");
 
   try {
     await concept.initializePreferences({ progressionId: progA });
-    await concept.setPreferredGenre({ progressionId: progA, preferredGenre: "Pop" }); // Set some preferences
+    await concept.setGenre({ progressionId: progA, genre: "Pop" });
 
     const chords: (string | null)[] = ["C", null, "Am", "F"];
 
@@ -341,8 +324,8 @@ Deno.test("Action: suggestChord - requirements and effects", async () => {
     });
     assertNotEquals("error" in validSuggestion, true, "Valid suggestion should succeed");
     const { suggestedChords } = validSuggestion as { suggestedChords: string[] };
-    assertArrayIncludes(suggestedChords, ["C", "F", "G"], "Suggested chords should match mock response"); // Based on mock LLM response
-
+    assertArrayIncludes(suggestedChords, ["C", "F", "G"], "Suggested chords should match mock response");
+    
     // Test with a progression containing `null` values, ensuring prompt formatting handles it
     const chordsWithManyNulls: (string | null)[] = [null, null, "Am", null];
     const validSuggestionWithNulls = await concept.suggestChord({
@@ -362,12 +345,11 @@ Deno.test("Action: suggestProgression - requirements and effects", async () => {
   const mockLlm = new MockGeminiLLM();
   const concept = new SuggestChordConcept(db, mockLlm);
 
-  // Set a simplified mock response for progression suggestions
   mockLlm.setMockResponse("Generate a distinct, musically coherent chord progression", "C,G,Am,F");
 
   try {
     await concept.initializePreferences({ progressionId: progA });
-    await concept.setComplexityLevel({ progressionId: progA, complexityLevel: "Basic" }); // Set some preferences
+    await concept.setComplexity({ progressionId: progA, complexity: "Simple" });
 
     // Requires: progression exists - suggest for non-existent progB
     const nonExistentProgressionResult = await concept.suggestProgression({
@@ -423,7 +405,6 @@ Deno.test("LLM Error Handling: suggestChord returns error on LLM failure", async
   const mockLlm = new MockGeminiLLM();
   const concept = new SuggestChordConcept(db, mockLlm);
 
-  // Configure the mock LLM to throw an error
   mockLlm.setError(new Error("LLM API call failed during chord suggestion"));
 
   try {
@@ -447,7 +428,6 @@ Deno.test("LLM Error Handling: suggestProgression returns error on LLM failure",
   const mockLlm = new MockGeminiLLM();
   const concept = new SuggestChordConcept(db, mockLlm);
 
-  // Configure the mock LLM to throw an error
   mockLlm.setError(new Error("LLM API call failed during progression suggestion"));
 
   try {
@@ -469,8 +449,7 @@ Deno.test("LLM Empty Response Handling: suggestChord returns error if LLM provid
   const mockLlm = new MockGeminiLLM();
   const concept = new SuggestChordConcept(db, mockLlm);
 
-  // Configure the mock LLM to return an empty string
-  mockLlm.setMockResponse("Suggest 16 musically appropriate chords", "");
+  mockLlm.setMockResponse("Suggest 48 musically appropriate chords", "");
 
   try {
     await concept.initializePreferences({ progressionId: progA });
@@ -493,7 +472,6 @@ Deno.test("LLM Empty Response Handling: suggestProgression returns error if LLM 
   const mockLlm = new MockGeminiLLM();
   const concept = new SuggestChordConcept(db, mockLlm);
 
-  // Configure the mock LLM to return an empty string
   mockLlm.setMockResponse("Generate a distinct, musically coherent chord progression", "");
 
   try {
