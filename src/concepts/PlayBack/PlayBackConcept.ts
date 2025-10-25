@@ -104,14 +104,14 @@ export default class PlayBackConcept {
    * Query: Retrieves the playback settings for a specific progression.
    * @effects Returns the PlaybackSettings for progression.
    */
-  async getProgressionSettings(progressionId: Progression): Promise<PlaybackSettings | { error: string }> {
+  async getProgressionSettings({ progressionId }: { progressionId: Progression }): Promise<{ settings: PlaybackSettings } | { error: string }> {
     const settings = await this.settings.findOne({ _id: progressionId });
     if (!settings) {
       return {
         error: `Playback settings for progression ID ${progressionId} not found.`,
       };
     }
-    return settings;
+    return { settings: settings };
   }
 
   /**
