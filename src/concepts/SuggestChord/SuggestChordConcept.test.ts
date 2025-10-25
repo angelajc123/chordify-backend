@@ -1,7 +1,7 @@
 import { assertEquals, assertExists, assertNotEquals, assertArrayIncludes } from "jsr:@std/assert";
 import { testDb } from "@utils/database.ts";
 import { ID } from "@utils/types.ts";
-import SuggestChordConcept from "./SuggestChord.ts";
+import SuggestChordConcept from "./SuggestChordConcept.ts";
 import { GeminiLLM } from "@utils/gemini-llm.ts";
 
 class MockGeminiLLM extends GeminiLLM {

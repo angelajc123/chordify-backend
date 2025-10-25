@@ -1,7 +1,7 @@
 import { Collection, Db, ObjectId } from "npm:mongodb";
 import { Empty, ID } from "@utils/types.ts";
 import { GeminiLLM } from "@utils/gemini-llm.ts";
-import { isValidChord } from "../ProgressionBuilder/ProgressionBuilder.ts";
+import { isValidChord } from "../ProgressionBuilder/ProgressionBuilderConcept.ts";
 import { Key } from "npm:tonal";
 import { NUM_SUGGESTIONS, GENRES, COMPLEXITY_LEVELS } from "@shared/constants.ts";
 
