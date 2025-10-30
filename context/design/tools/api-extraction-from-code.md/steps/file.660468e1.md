@@ -1,3 +1,12 @@
+---
+timestamp: 'Wed Oct 29 2025 20:30:50 GMT-0400 (Eastern Daylight Time)'
+parent: '[[../20251029_203050.7bbf7edf.md]]'
+content_id: 660468e10527f738ea79343b5ff72524851d1322ca7e870859bf576d6f262827
+---
+
+# file: src/concepts/SuggestChord/SuggestChordConcept.ts
+
+```typescript
 import { Collection, Db } from "npm:mongodb";
 import { Empty, ID } from "@utils/types.ts";
 import { GeminiLLM } from "@utils/gemini-llm.ts";
@@ -118,18 +127,6 @@ export default class SuggestChordConcept {
     return { preferences: preferences };
   }
 
-  async deletePreferences(
-    { progressionId }: { progressionId: Progression },
-  ): Promise<Empty | { error: string }> {
-    const result = await this.preferences.deleteOne({ _id: progressionId });
-
-    if (result.deletedCount === 0) {
-      return { error: `Preferences for progression ${progressionId} not found.` };
-    }
-
-    return {};
-  }
-
   async suggestChord(
     { progressionId, chords, position }: {
       progressionId: Progression;
@@ -234,12 +231,11 @@ export default class SuggestChordConcept {
       - Reflect the specified complexity level (e.g., simple triads for beginner; extended, altered, or borrowed chords for advanced).
       - Demonstrate smooth voice leading and clear harmonic function.
       - Include both diatonic and tasteful non-diatonic chords when appropriate (e.g., secondary dominants, modal interchange, tritone substitutions).
-      - Follow commosn functional patterns (e.g., tonic–subdominant–dominant–tonic, ii–V–I in jazz, I–V–vi–IV in pop) unless the genre suggests otherwise.
+      - Follow common functional patterns (e.g., tonic–subdominant–dominant–tonic, ii–V–I in jazz, I–V–vi–IV in pop) unless the genre suggests otherwise.
 
-      STRICT OUTPUT FORMAT:
-      Return only the progressions, one progression per line.
+      OUTPUT FORMAT:
+      Return a comma-separated list of chord names for each progression, one progression per line.
       Do not include explanations, commentary, or markdown.
-      Separate chords with a single space.
     `;
 
     try {
@@ -247,7 +243,7 @@ export default class SuggestChordConcept {
       const progressions = llmResponse
         .split("\n")
         .map((line: string) => 
-          line.split(" ").map((s) => s.trim()).filter(isValidChord).filter(Boolean))
+          line.split(",").map((s) => s.trim()).filter(isValidChord).filter(Boolean))
         .filter((p) => p.length === length).slice(0, NUM_PROGESSION_SUGGESTIONS);
 
       if (progressions.length === 0) {
@@ -262,3 +258,4 @@ export default class SuggestChordConcept {
     }
   }
 }
+```

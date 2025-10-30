@@ -1,3 +1,12 @@
+---
+timestamp: 'Thu Oct 30 2025 16:17:04 GMT-0400 (Eastern Daylight Time)'
+parent: '[[../20251030_161704.7080af51.md]]'
+content_id: 1f5a122f17d1276622f1dda75988c27f5b3ccfe3be351e381dc5345fc5e9a6d3
+---
+
+# file: src/concepts/SuggestChord/SuggestChordConcept.ts
+
+```typescript
 import { Collection, Db } from "npm:mongodb";
 import { Empty, ID } from "@utils/types.ts";
 import { GeminiLLM } from "@utils/gemini-llm.ts";
@@ -262,3 +271,4 @@ export default class SuggestChordConcept {
     }
   }
 }
+```

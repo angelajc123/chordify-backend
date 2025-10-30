@@ -463,7 +463,7 @@ Deno.test("Query: getProgression retrieves a progression or returns error for in
   }
 });
 
-Deno.test("Query: listProgressions returns all progression identifiers and names", async () => {
+Deno.test("Query: listProgressions returns all progression identifiers and names in reverse chronological order", async () => {
   const [db, client] = await testDb();
   const concept = new ProgressionBuilderConcept(db);
 
@@ -482,15 +482,18 @@ Deno.test("Query: listProgressions returns all progression identifiers and names
     assertEquals(listResult.progressionIdentifiers[0].id, pId1);
     assertEquals(listResult.progressionIdentifiers[0].name, "List Prog 1");
 
-    // Multiple progressions
+    // Multiple progressions - verify order (latest created first)
     const { progression: prog2 } = (await concept.createProgression({
       name: "List Prog 2",
     })) as { progression: any };
     const pId2 = prog2._id;
     listResult = await concept.listProgressions();
     assertEquals(listResult.progressionIdentifiers.length, 2);
-    const names = listResult.progressionIdentifiers.map((p) => p.name).sort();
-    assertEquals(names, ["List Prog 1", "List Prog 2"]);
+    // Latest created (prog2) should be first
+    assertEquals(listResult.progressionIdentifiers[0].id, pId2);
+    assertEquals(listResult.progressionIdentifiers[0].name, "List Prog 2");
+    assertEquals(listResult.progressionIdentifiers[1].id, pId1);
+    assertEquals(listResult.progressionIdentifiers[1].name, "List Prog 1");
   } finally {
     await client.close();
   }

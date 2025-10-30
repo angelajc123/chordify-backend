@@ -36,8 +36,8 @@ class MockGeminiLLM extends GeminiLLM {
     console.warn("No specific mock response found for prompt:", prompt);
     if (prompt.includes("Suggest 48 musically appropriate chords")) {
         return Promise.resolve("C,G,Am,F,Dm,E7,A7,D7,G7,Cm,Eb,Ab,Bb,Fm,Db,Gb,C7,Gm,Fmaj7,Em,Bm,D,A,E");
-    } else if (prompt.includes("Generate a distinct, musically coherent chord progression")) {
-        return Promise.resolve("C,G,Am,F");
+    } else if (prompt.includes("Generate 6 distinct, musically coherent chord progressions")) {
+        return Promise.resolve("C G Am F\nDm G C Am\nF G C Am");
     }
     return Promise.resolve("");
   }
@@ -57,8 +57,8 @@ Deno.test("Principle: User initializes preferences, sets context, and gets sugge
     "C,G,Am,F,Dm,E7,A7,D7,G7,Cm,Eb,Ab,Bb,Fm,Db,Gb,C7,Gm,Fmaj7,Em,Bm,D,A,E",
   );
   mockLlm.setMockResponse(
-    "Generate a distinct, musically coherent chord progression",
-    "C,G,Am,F",
+    "Generate 6 distinct, musically coherent chord progressions",
+    "C G Am F\nDm G C Am\nF G C Am",
   );
 
   try {
@@ -95,8 +95,9 @@ Deno.test("Principle: User initializes preferences, sets context, and gets sugge
       length: 4,
     });
     assertNotEquals("error" in suggestProgressionResult, true, "Progression suggestion should succeed");
-    const { chordSequence } = suggestProgressionResult as { chordSequence: string[] };
-    assertArrayIncludes(chordSequence, ["C", "G", "Am", "F"], "Suggested progression should match mock"); // Based on mock LLM response
+    const { suggestedProgressions } = suggestProgressionResult as { suggestedProgressions: string[][] };
+    assertEquals(suggestedProgressions.length > 0, true, "Should return at least one progression");
+    assertArrayIncludes(suggestedProgressions[0], ["C", "G", "Am", "F"], "First suggested progression should match mock"); // Based on mock LLM response
 
     // 4. User generates suggestions for a single chord in the progression
     const currentChords: (string | null)[] = ["C", null, "G", "Am"];
@@ -345,7 +346,7 @@ Deno.test("Action: suggestProgression - requirements and effects", async () => {
   const mockLlm = new MockGeminiLLM();
   const concept = new SuggestChordConcept(db, mockLlm);
 
-  mockLlm.setMockResponse("Generate a distinct, musically coherent chord progression", "C,G,Am,F");
+  mockLlm.setMockResponse("Generate 6 distinct, musically coherent chord progressions", "C G Am F\nDm G C Am\nF G C Am");
 
   try {
     await concept.initializePreferences({ progressionId: progA });
@@ -387,14 +388,16 @@ Deno.test("Action: suggestProgression - requirements and effects", async () => {
       "Error message for 0 length mismatch",
     );
 
-    // Effects: returns chord sequence for a valid scenario
+    // Effects: returns suggested progressions for a valid scenario
     const validSuggestion = await concept.suggestProgression({
       progressionId: progA,
       length: 4,
     });
     assertNotEquals("error" in validSuggestion, true, "Valid suggestion should succeed");
-    const { chordSequence } = validSuggestion as { chordSequence: string[] };
-    assertArrayIncludes(chordSequence, ["C", "G", "Am", "F"], "Suggested chord sequence should match mock response"); // Based on mock LLM response
+    const { suggestedProgressions } = validSuggestion as { suggestedProgressions: string[][] };
+    assertEquals(suggestedProgressions.length > 0, true, "Should return at least one progression");
+    assertEquals(suggestedProgressions[0].length, 4, "Each progression should have the requested length");
+    assertArrayIncludes(suggestedProgressions[0], ["C", "G", "Am", "F"], "First suggested progression should match mock response"); // Based on mock LLM response
   } finally {
     await client.close();
   }
@@ -472,7 +475,7 @@ Deno.test("LLM Empty Response Handling: suggestProgression returns error if LLM 
   const mockLlm = new MockGeminiLLM();
   const concept = new SuggestChordConcept(db, mockLlm);
 
-  mockLlm.setMockResponse("Generate a distinct, musically coherent chord progression", "");
+  mockLlm.setMockResponse("Generate 6 distinct, musically coherent chord progressions", "");
 
   try {
     await concept.initializePreferences({ progressionId: progA });
@@ -482,6 +485,52 @@ Deno.test("LLM Empty Response Handling: suggestProgression returns error if LLM 
       (result as any).error,
       "LLM did not return a valid chord progression.",
       "Error message for empty LLM response mismatch",
+    );
+  } finally {
+    await client.close();
+  }
+});
+
+Deno.test("Action: deletePreferences successfully removes preferences", async () => {
+  const [db, client] = await testDb();
+  const mockLlm = new MockGeminiLLM();
+  const concept = new SuggestChordConcept(db, mockLlm);
+
+  try {
+    // Initialize preferences
+    await concept.initializePreferences({ progressionId: progA });
+    
+    // Verify preferences exist
+    let getResult = await concept.getSuggestionPreferences({ progressionId: progA });
+    assertNotEquals("error" in getResult, true, "Preferences should exist before deletion");
+
+    // Delete preferences
+    const deleteResult = await concept.deletePreferences({ progressionId: progA });
+    assertNotEquals("error" in deleteResult, true, "Deletion should succeed");
+
+    // Verify preferences no longer exist
+    getResult = await concept.getSuggestionPreferences({ progressionId: progA });
+    assertEquals("error" in getResult, true, "Preferences should not exist after deletion");
+    assertEquals(
+      (getResult as { error: string }).error,
+      `Preferences for progression ${progA} not found.`,
+    );
+  } finally {
+    await client.close();
+  }
+});
+
+Deno.test("Action: deletePreferences returns error if preferences not found", async () => {
+  const [db, client] = await testDb();
+  const mockLlm = new MockGeminiLLM();
+  const concept = new SuggestChordConcept(db, mockLlm);
+
+  try {
+    const result = await concept.deletePreferences({ progressionId: progC });
+    assertEquals("error" in result, true, "Should return error if preferences not found");
+    assertEquals(
+      (result as { error: string }).error,
+      `Preferences for progression ${progC} not found.`,
     );
   } finally {
     await client.close();

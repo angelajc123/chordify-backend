@@ -8,6 +8,7 @@ export const MAX_SECONDS_PER_CHORD = 10;
 
 // SuggestChord constants
 export const NUM_SUGGESTIONS = 24;
+export const NUM_PROGESSION_SUGGESTIONS = 3;
 export const GENRES = ["Pop", "Rock", "Jazz", "Classical", "Hip hop", "R&B", "Country", "Electronic"];
 export const COMPLEXITY_LEVELS = ["Simple", "Intermediate", "Advanced"];
 

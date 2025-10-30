@@ -52,7 +52,7 @@ Deno.test("PlayBack Concept Principle: User sets settings and plays chords/progr
     const chordNotesResult = await playbackConcept.getChordNotes({ chord: "Cmaj7" });
     assertNotEquals("error" in chordNotesResult, true, "Getting chord notes should succeed");
     if (!("error" in chordNotesResult)) {
-        assertEquals(chordNotesResult.notes.sort(), Tonal.Chord.get("Cmaj7").notes.sort());
+        assertEquals(chordNotesResult.notes.sort(), ["B4", "C4", "E4", "G4"]);
     } else {
         throw new Error("Expected notes in playChordResult");
     }
@@ -64,9 +64,9 @@ Deno.test("PlayBack Concept Principle: User sets settings and plays chords/progr
     assertNotEquals("error" in progressionNotesResult, true, "Getting progression notes should succeed");
     if (!("error" in progressionNotesResult)) {
         assertEquals(progressionNotesResult.notes.length, 3);
-        assertEquals(progressionNotesResult.notes[0].sort(), Tonal.Chord.get("Cmaj7").notes.sort());
-        assertEquals(progressionNotesResult.notes[1].sort(), Tonal.Chord.get("Fmaj7").notes.sort());
-        assertEquals(progressionNotesResult.notes[2].sort(), Tonal.Chord.get("G7").notes.sort());
+        assertEquals(progressionNotesResult.notes[0].sort(), ["B4", "C4", "E4", "G4"]);
+        assertEquals(progressionNotesResult.notes[1].sort(), ["A4", "C4", "E4", "F4"]);
+        assertEquals(progressionNotesResult.notes[2].sort(), ["B4", "D4", "F4", "G4"]);
     } else {
         throw new Error("Expected notes in progressionNotesResult");
     }
@@ -279,7 +279,7 @@ Deno.test("Action: getChordNotes returns correct notes for a valid chord", async
     const result = await playbackConcept.getChordNotes({ chord: "Dmin7" });
     assertNotEquals("error" in result, true, "Getting chord notes should succeed");
     if (!("error" in result)) {
-        assertEquals(result.notes.sort(), Tonal.Chord.get("Dmin7").notes.sort());
+        assertEquals(result.notes.sort(), ["A4", "C4", "D4", "F4"]);
     } else {
         throw new Error("Expected notes in result");
     }
@@ -334,9 +334,9 @@ Deno.test("Action: getProgressionNotes returns correct notes for a valid progres
     assertNotEquals("error" in result, true, "Getting progression notes should succeed");
     if (!("error" in result)) {
         assertEquals(result.notes.length, 3);
-        assertEquals(result.notes[0].sort(), Tonal.Chord.get("Cmaj").notes.sort());
-        assertEquals(result.notes[1].sort(), Tonal.Chord.get("G7").notes.sort());
-        assertEquals(result.notes[2].sort(), Tonal.Chord.get("Am").notes.sort());
+        assertEquals(result.notes[0].sort(), ["C4", "E4", "G4"]);
+        assertEquals(result.notes[1].sort(), ["B4", "D4", "F4", "G4"]);
+        assertEquals(result.notes[2].sort(), ["A4", "C4", "E4"]);
     } else {
         throw new Error("Expected notes in result");
     }
@@ -356,6 +356,50 @@ Deno.test("Action: getProgressionNotes returns error for an invalid chord in pro
     assertEquals(
       (result as { error: string }).error,
       "Invalid chord specified: 'InvalidChord'.",
+    );
+  } finally {
+    await client.close();
+  }
+});
+
+Deno.test("Action: deleteSettings successfully removes settings", async () => {
+  const [db, client] = await testDb();
+  const playbackConcept = new PlayBackConcept(db);
+
+  try {
+    // Initialize settings
+    await playbackConcept.initializeSettings({ progressionId: progA });
+    
+    // Verify settings exist
+    let getResult = await playbackConcept.getPlayBackSettings({ progressionId: progA });
+    assertNotEquals("error" in getResult, true, "Settings should exist before deletion");
+
+    // Delete settings
+    const deleteResult = await playbackConcept.deleteSettings({ progressionId: progA });
+    assertNotEquals("error" in deleteResult, true, "Deletion should succeed");
+
+    // Verify settings no longer exist
+    getResult = await playbackConcept.getPlayBackSettings({ progressionId: progA });
+    assertEquals("error" in getResult, true, "Settings should not exist after deletion");
+    assertEquals(
+      (getResult as { error: string }).error,
+      `Playback settings for progression ID ${progA} not found.`,
+    );
+  } finally {
+    await client.close();
+  }
+});
+
+Deno.test("Action: deleteSettings returns error if settings not found", async () => {
+  const [db, client] = await testDb();
+  const playbackConcept = new PlayBackConcept(db);
+
+  try {
+    const result = await playbackConcept.deleteSettings({ progressionId: progNonExistent });
+    assertEquals("error" in result, true, "Should return error if settings not found");
+    assertEquals(
+      (result as { error: string }).error,
+      `Playback settings for progression ID ${progNonExistent} not found.`,
     );
   } finally {
     await client.close();

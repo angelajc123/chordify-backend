@@ -1,3 +1,12 @@
+---
+timestamp: 'Wed Oct 29 2025 20:30:50 GMT-0400 (Eastern Daylight Time)'
+parent: '[[../20251029_203050.7bbf7edf.md]]'
+content_id: 4dc0e141aa3db7a4175119a8adb71e84c4cb56e1bbefb3ff5027b6adff212486
+---
+
+# file: src/concepts/ProgressionBuilder/ProgressionBuilderConcept.ts
+
+```typescript
 import { Collection, Db } from "npm:mongodb";
 import { Empty, ID } from "@utils/types.ts";
 import { freshID } from "@utils/database.ts";
@@ -237,7 +246,6 @@ export default class ProgressionBuilderConcept {
   > {
     const identifiers = await this.progressions.find({}, {
       projection: { _id: 1, name: 1 },
-      sort: { _id: -1 },
     }).toArray();
     return {
       progressionIdentifiers: identifiers.map((doc) => ({
@@ -247,3 +255,4 @@ export default class ProgressionBuilderConcept {
     };
   }
 }
+```

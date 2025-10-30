@@ -1,3 +1,12 @@
+---
+timestamp: 'Wed Oct 29 2025 20:30:50 GMT-0400 (Eastern Daylight Time)'
+parent: '[[../20251029_203050.7bbf7edf.md]]'
+content_id: f93a4a69aca31a516a4ce821a2fbc0a6bd5269f0749cb11a41a51a4a87e55115
+---
+
+# file: src/concepts/PlayBack/PlayBackConcept.ts
+
+```typescript
 import { Collection, Db } from "npm:mongodb";
 import { Empty, ID } from "../../utils/types.ts";
 import * as Tonal from "npm:tonal";
@@ -99,20 +108,6 @@ export default class PlayBackConcept {
     return { settings: settings };
   }
 
-  async deleteSettings(
-    { progressionId }: { progressionId: Progression }
-  ): Promise<Empty | { error: string }> {
-    const result = await this.settings.deleteOne({ _id: progressionId });
-
-    if (result.deletedCount === 0) {
-      return {
-        error: `Playback settings for progression ID ${progressionId} not found.`,
-      };
-    }
-
-    return {};
-  }
-
   async getChordNotes(
     { chord }: { chord: Chord }
   ): Promise<{ notes: string[] } | { error: string }> {
@@ -146,3 +141,4 @@ export default class PlayBackConcept {
     return { notes: notes };
   }
 }
+```

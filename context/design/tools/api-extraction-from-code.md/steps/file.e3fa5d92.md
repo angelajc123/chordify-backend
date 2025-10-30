@@ -1,3 +1,12 @@
+---
+timestamp: 'Thu Oct 30 2025 16:17:04 GMT-0400 (Eastern Daylight Time)'
+parent: '[[../20251030_161704.7080af51.md]]'
+content_id: e3fa5d920e9c9aa6896491c00ac63019d9ca873b6aec0be52d397f3572f8b615
+---
+
+# file: src/concepts/PlayBack/PlayBackConcept.ts
+
+```typescript
 import { Collection, Db } from "npm:mongodb";
 import { Empty, ID } from "../../utils/types.ts";
 import * as Tonal from "npm:tonal";
@@ -146,3 +155,4 @@ export default class PlayBackConcept {
     return { notes: notes };
   }
 }
+```
