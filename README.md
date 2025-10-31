@@ -1,6 +1,7 @@
 # 6.104 Assignment 4: Implementing Concepts
 
 ## File Structure
+```
 - design/
   - concepts/
     - ConceptName/
@@ -13,3 +14,4 @@
       - ConceptName.test.ts (tests)
       - ConceptName.ts (implementation)
 - designFile.md (overall design changes)  
+```
