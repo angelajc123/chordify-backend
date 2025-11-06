@@ -1,17 +1,23 @@
-# 6.104 Assignment 4: Implementing Concepts
+# 6.104 Assignment 4: Personal Project
+
+## Deliverables
+[Design Document](designDoc.md)  
+[Reflection](reflection.md)  
+[Demo]()  
+[Trace of Incoming Actions](incomingActions.md)
 
 ## File Structure
 ```
 - design/
   - concepts/
     - ConceptName/
-      - ConceptNameDesign.md (design changes)
       - ConceptNameSpec.md (concept specifications)
-      - ConceptNameTestOutput.md (test output)
 - src/
   - concepts/
     - ConceptName/
       - ConceptName.test.ts (tests)
       - ConceptName.ts (implementation)
-- designFile.md (overall design changes)  
+- designDoc.md (overall design changes)
+- reflection.md (personal reflection) 
+- incomingActions.md (trace of incoming actions)
 ```
