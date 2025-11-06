@@ -6,26 +6,26 @@
     *   A set of `Progressions` with
         *   An `id` of type `Number`
         *   A `name` of type `String`
-        *   A `chordSequence` of type sequence of `Slots`, each with
+        *   A `chords` of type sequence of `Slots`, each with
             *   a `chord` of type `String`, or `null` if no chord is set
 *   **actions**:
     *   `createProgression(name: String): (progression: Progression)`
         *   **effect**: Creates a new, empty progression with the given name, and unique id, and returns that id.
     *   `addSlot(progressionId: Number)`
         *   **requires**: `progressionId` is a valid id of a progression
-        *   **effect**: appends a null `Slot` to `chordSequence` of the progression with id `progressionId`
+        *   **effect**: appends a null `Slot` to `chords` of the progression with id `progressionId`
     *   `setChord(progressionId: Number, position: Number, chord: String)`
-        *   **requires**: `progressionId` is a valid id of a progression, `position` is a valid index of `chordSequence` of the progression with id `progressionId`
-        *   **effect**: sets the `Slot` at `position` of `chordSequence` of the progression with id `progressionId`’s `chord` to `chord`
+        *   **requires**: `progressionId` is a valid id of a progression, `position` is a valid index of `chords` of the progression with id `progressionId`
+        *   **effect**: sets the `Slot` at `position` of `chords` of the progression with id `progressionId`’s `chord` to `chord`
     *   `deleteChord(progressionId: Number, position: Number)`
-        *   **requires**: `progressionId` is a valid id of a progression, `position` is a valid index of `chordSequence` of the progression with id `progressionId`
-        *   **effect**: sets `chord` at the `Slot` at `position` of `chordSequence` of the progression with id `progressionId` to `null`
+        *   **requires**: `progressionId` is a valid id of a progression, `position` is a valid index of `chords` of the progression with id `progressionId`
+        *   **effect**: sets `chord` at the `Slot` at `position` of `chords` of the progression with id `progressionId` to `null`
     *   `deleteSlot(progressionId: Number, position: Number)`
-        *   **requires**: `progressionId` is a valid id of a progression, `position` is a valid index of `chordSequence` of the progression with id `progressionId`
-        *   **effect**: removes the `Slot` at `position` of `chordSequence` of the progression with id `progressionId`
+        *   **requires**: `progressionId` is a valid id of a progression, `position` is a valid index of `chords` of the progression with id `progressionId`
+        *   **effect**: removes the `Slot` at `position` of `chords` of the progression with id `progressionId`
     *   `reorderSlots(progressionId: Number, oldPosition: Number, newPosition: Number)`
-        *   **requires**: `progressionId` is a valid id of a progression, `oldPosition` is a valid index of `chordSequence` of the progression with id `progressionId`, `newPosition` is a valid index of `chordSequence` of the progression with id `progressionId`
-        *   **effect**: moves the `Slot` at `oldPosition` of `chordSequence` of the progression with id `progressionId` to `newPosition`
+        *   **requires**: `progressionId` is a valid id of a progression, `oldPosition` is a valid index of `chords` of the progression with id `progressionId`, `newPosition` is a valid index of `chords` of the progression with id `progressionId`
+        *   **effect**: moves the `Slot` at `oldPosition` of `chords` of the progression with id `progressionId` to `newPosition`
     *   `deleteProgression(progressionId: Number)`
         *   **requires**: `progressionId` is a valid id of a progression
         *   **effect**: removes the progression with id `progressionId`

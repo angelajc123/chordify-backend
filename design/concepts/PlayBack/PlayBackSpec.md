@@ -5,7 +5,7 @@
 *   **state**:
     *   A set of `ProgressionPlaybackSettings` with
         *   A `progression` of type `Progression`
-        *   An `instrument` of type `String`, default `Grand Piano`
+        *   An `instrument` of type `String`, default `Piano`
         *   A `secondsPerChord` of type `Number`, default `1`
 
 *   **actions**:
@@ -20,9 +20,10 @@
         *   **effect**: updates the `ProgressionPlaybackSettings` for `progression` with the given `secondsPerChord`.
     *   `getProgressionSettings(progression: Progression): (progressionSettings: ProgressionPlaybackSettings)`
         *   **effect**: returns the `ProgressionPlaybackSettings` for `progression`.
-    *   `playChord(progression: Progression, chord: String)`
+    *   `deleteSettings(progression: Progression)`
         *   **requires**: `progression` exists in `ProgressionPlaybackSettings`
-        *   **effect**: plays the given `chord` using the settings in `ProgressionPlaybackSettings` for `progression`.
-    *   `playProgression(progression: Progression, chordSequence: (String | null)[])`
-        *   **requires**: `progression` exists in `ProgressionPlaybackSettings`
-        *   **effect**: plays the given `chordSequence` using the settings in `ProgressionPlaybackSettings` for `progression`.
+        *   **effect**: deletes the `ProgressionPlaybackSettings` for `progression`.
+    *   `getChordNotes(chord: String): (notes: String[])`
+        *   **effect**: returns the notes of the given `chord`.
+    *   `getProgressionNotes(progression: Progression): (notes: String[][])`
+        *   **effect**: returns the notes of the given `progression`.
