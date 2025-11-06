@@ -102,10 +102,38 @@ export const Engine = new SyncConcept();\n`;
 export const [db, client] = await ${dbImportFunc}();
 `;
 
+  // Add LLM initialization for production (not test)
+  const llmInitialization = !isTest ? `
+// Initialize LLM for concepts that need it
+import { GeminiLLM } from "@utils/gemini-llm.ts";
+import "jsr:@std/dotenv/load";
+const apiKey = Deno.env.get("GEMINI_API_KEY");
+if (!apiKey) {
+  throw new Error("GEMINI_API_KEY not found in environment variables");
+}
+const llm = new GeminiLLM({ apiKey });
+` : `
+// Mock LLM for testing
+import { GeminiLLM } from "@utils/gemini-llm.ts";
+class MockGeminiLLM extends GeminiLLM {
+  constructor() {
+    super({ apiKey: "mock-key" });
+  }
+  async executeLLM(_prompt: string): Promise<string> {
+    return "Mock response";
+  }
+}
+const llm = new MockGeminiLLM();
+`;
+
   const instantiations = concepts
-    .map((c) =>
-      `export const ${c.name} = Engine.instrumentConcept(new ${c.name}Concept(db));`
-    )
+    .map((c) => {
+      // Special case for SuggestChord which needs the llm parameter
+      if (c.name === "SuggestChord") {
+        return `export const ${c.name} = Engine.instrumentConcept(new ${c.name}Concept(db, llm));`;
+      }
+      return `export const ${c.name} = Engine.instrumentConcept(new ${c.name}Concept(db));`;
+    })
     .join("\n");
 
   return [
@@ -115,6 +143,7 @@ export const [db, client] = await ${dbImportFunc}();
     "", // newline
     conceptTypeExports,
     dbInitialization,
+    llmInitialization,
     instantiations,
     "", // trailing newline
   ].join("\n");

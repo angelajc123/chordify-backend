@@ -22,15 +22,34 @@
  * the passthrough is appropriate (e.g. public query).
  *
  * inclusions = {"route": "justification"}
+ * 
+ * This application is meant to be single user, so all of these actions are public for that user.
  */
 
 export const inclusions: Record<string, string> = {
+  "/api/PlayBack/setInstrument": "public action",
+  "/api/PlayBack/setSecondsPerChord": "public action",
+  "/api/PlayBack/deleteSettings": "public action",
   "/api/PlayBack/getPlayBackSettings": "public query",
   "/api/PlayBack/getChordNotes": "public action",
   "/api/PlayBack/getProgressionNotes": "public action",
+  "/api/ProgressionBuilder/validateProgressionAndPosition": "public action",
+  "/api/ProgressionBuilder/addSlot": "public action",
+  "/api/ProgressionBuilder/setChord": "public action",
+  "/api/ProgressionBuilder/deleteChord": "public action",
+  "/api/ProgressionBuilder/deleteSlot": "public action",
+  "/api/ProgressionBuilder/reorderSlots": "public action",
+  "/api/ProgressionBuilder/deleteProgression": "public action",
+  "/api/ProgressionBuilder/renameProgression": "public action",
   "/api/ProgressionBuilder/getProgression": "public query",
   "/api/ProgressionBuilder/listProgressions": "public query",
-  "/api/SuggestChord/getSuggestionPreferences": "public query"
+  "/api/SuggestChord/getSuggestionPreferences": "public query",
+  "/api/SuggestChord/setGenre": "public action",
+  "/api/SuggestChord/setComplexity": "public action",
+  "/api/SuggestChord/setKey": "public action",
+  "/api/SuggestChord/deletePreferences": "public action",
+  "/api/SuggestChord/suggestChord": "public action",
+  "/api/SuggestChord/suggestProgression": "public action",
 };
 
 /**
